@@ -1,0 +1,12 @@
+Checks: >
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  bugprone-*,
+  -readability-magic-numbers,
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: file

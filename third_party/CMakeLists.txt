@@ -1,0 +1,10 @@
+file(GLOB THIRD_PARTY_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+
+foreach(third_party ${THIRD_PARTY_DIRS})
+    if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${third_party})
+        if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${third_party}/CMakeLists.txt)
+            message(STATUS "Adding third_party: ${third_party}")
+            add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/${third_party})
+        endif()
+    endif()
+endforeach()

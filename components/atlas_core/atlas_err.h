@@ -1,0 +1,19 @@
+#ifndef ATLAS_CORE_ATLAS_ERR_H
+#define ATLAS_CORE_ATLAS_ERR_H
+
+typedef enum {
+    ATLAS_ERR_OK,
+    ATLAS_ERR_FAIL,
+    ATLAS_ERR_NOT_READY,
+    ATLAS_ERR_NOT_RUNNING,
+    ATLAS_ERR_ALREADY_RUNNING,
+    ATLAS_ERR_UNKNOWN_EVENT,
+    ATLAS_ERR_UNKNOWN_NOTIFY,
+    ATLAS_ERR_UNKNOWN_ORIGIN,
+    ATLAS_ERR_UNKNOWN_PACKET,
+    ATLAS_ERR_IMPROPER_STATE,
+} atlas_err_t;
+
+char const* atlas_err_to_string(atlas_err_t err);
+
+#endif // ATLAS_CORE_ATLAS_ERR_H
