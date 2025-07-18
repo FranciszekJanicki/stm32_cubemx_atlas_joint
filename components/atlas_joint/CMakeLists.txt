@@ -3,17 +3,17 @@ add_subdirectory(system_task)
 add_subdirectory(joint_task)
 add_subdirectory(packet_task)
 
-add_library(atlas_rob STATIC)
+add_library(atlas_joint STATIC)
 
-target_sources(atlas_rob PRIVATE 
+target_sources(atlas_joint PRIVATE 
     atlas_joint.c
 )  
 
-target_include_directories(atlas_rob PUBLIC
+target_include_directories(atlas_joint PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(atlas_rob PUBLIC 
+target_link_libraries(atlas_joint PUBLIC 
     common
     system_task
     joint_task
@@ -22,7 +22,7 @@ target_link_libraries(atlas_rob PUBLIC
     stm32cubemx
 )
 
-target_compile_options(atlas_rob PUBLIC
+target_compile_options(atlas_joint PUBLIC
     -std=c23
     -Wall
     -Wextra

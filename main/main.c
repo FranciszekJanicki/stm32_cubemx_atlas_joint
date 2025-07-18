@@ -19,6 +19,7 @@ int main(void)
     MX_SPI1_Init();
 
     atlas_joint_config_t config = {
+        .system_ctx = {.config = {.num = ATLAS_JOINT_NUM_1}},
         .uart_ctx = {.uart = &huart2},
         .packet_ctx = {.config = {.robot_packet_ready_gpio = GPIOA,
                                   .robot_packet_ready_pin = GPIO_PIN_0,
