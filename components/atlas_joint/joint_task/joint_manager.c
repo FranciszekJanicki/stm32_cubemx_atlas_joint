@@ -140,13 +140,23 @@ static as5600_err_t as5600_bus_write_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_StatusTypeDef err = HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                                              config->as5600_i2c_address << 1,
-                                              address,
-                                              I2C_MEMADD_SIZE_8BIT,
-                                              data,
-                                              data_size,
-                                              100);
+    if (!config->as5600_i2c_bus) {
+        return AS5600_ERR_FAIL;
+    }
+
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    HAL_StatusTypeDef err;
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        err = HAL_I2C_Mem_Write(config->as5600_i2c_bus,
+                                config->as5600_i2c_address << 1,
+                                address,
+                                I2C_MEMADD_SIZE_8BIT,
+                                data,
+                                data_size,
+                                10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
 }
@@ -158,13 +168,23 @@ static as5600_err_t as5600_bus_read_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_StatusTypeDef err = HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                                             config->as5600_i2c_address << 1,
-                                             address,
-                                             I2C_MEMADD_SIZE_8BIT,
-                                             data,
-                                             data_size,
-                                             100);
+    if (!config->as5600_i2c_bus) {
+        return AS5600_ERR_FAIL;
+    }
+
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    HAL_StatusTypeDef err;
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        err = HAL_I2C_Mem_Read(config->as5600_i2c_bus,
+                               config->as5600_i2c_address << 1,
+                               address,
+                               I2C_MEMADD_SIZE_8BIT,
+                               data,
+                               data_size,
+                               10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
 }
@@ -182,13 +202,19 @@ static ina226_err_t ina226_bus_write_data(void* user,
         return INA226_ERR_FAIL;
     }
 
-    HAL_StatusTypeDef err = HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                                              config->ina226_i2c_address,
-                                              address,
-                                              I2C_MEMADD_SIZE_8BIT,
-                                              (uint8_t*)data,
-                                              data_size,
-                                              100U);
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    HAL_StatusTypeDef err;
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        err = HAL_I2C_Mem_Write(config->ina226_i2c_bus,
+                                config->ina226_i2c_address,
+                                address,
+                                I2C_MEMADD_SIZE_8BIT,
+                                (uint8_t*)data,
+                                data_size,
+                                10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return err == HAL_OK ? INA226_ERR_OK : INA226_ERR_FAIL;
 }
@@ -206,13 +232,19 @@ static ina226_err_t ina226_bus_read_data(void* user,
         return INA226_ERR_FAIL;
     }
 
-    HAL_StatusTypeDef err = HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                                             config->ina226_i2c_address,
-                                             address,
-                                             I2C_MEMADD_SIZE_8BIT,
-                                             data,
-                                             data_size,
-                                             100U);
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    HAL_StatusTypeDef err;
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        err = HAL_I2C_Mem_Read(config->ina226_i2c_bus,
+                               config->ina226_i2c_address,
+                               address,
+                               I2C_MEMADD_SIZE_8BIT,
+                               data,
+                               data_size,
+                               10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return err == HAL_OK ? INA226_ERR_OK : INA226_ERR_FAIL;
 }
