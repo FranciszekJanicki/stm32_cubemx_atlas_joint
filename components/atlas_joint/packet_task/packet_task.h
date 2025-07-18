@@ -12,4 +12,6 @@ typedef struct {
 
 atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx);
 
+void packet_task_joint_packet_ready_callback(void);
+
 #endif // PACKET_TASK_PACKET_TASK_H

@@ -75,7 +75,7 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-void joint_delta_timer_callback(void)
+void joint_task_delta_timer_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_JOINT),
@@ -86,7 +86,7 @@ void joint_delta_timer_callback(void)
     portYIELD_FROM_ISR(task_woken);
 }
 
-void joint_pwm_pulse_callback(void)
+void joint_task_pwm_pulse_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_JOINT),

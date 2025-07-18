@@ -64,11 +64,6 @@ static atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-void uart_tx_complete_callback(void)
-{
-    uart_transmit_complete_callback(task_manager_get(TASK_TYPE_UART));
-}
-
 void atlas_joint_initialize(atlas_joint_config_t const* config)
 {
     ATLAS_ASSERT(config);

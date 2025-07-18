@@ -18,8 +18,6 @@
 #include <stdint.h>
 
 typedef struct {
-    TIM_HandleTypeDef* delta_timer;
-
     GPIO_TypeDef* drv8825_gpio;
     uint32_t drv8825_dir_pin;
     TIM_HandleTypeDef* drv8825_pwm_timer;

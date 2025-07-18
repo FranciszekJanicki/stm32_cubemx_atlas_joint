@@ -73,7 +73,7 @@ atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-void joint_packet_ready_callback(void)
+void packet_task_joint_packet_ready_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_PACKET),

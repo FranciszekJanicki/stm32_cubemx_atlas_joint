@@ -338,20 +338,6 @@ static inline bool joint_manager_receive_joint_notify(joint_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static bool joint_manager_start_delta_timer(joint_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-
-    return HAL_TIM_Base_Start_IT(manager->config.delta_timer) == HAL_OK;
-}
-
-static bool joint_manager_stop_delta_timer(joint_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-
-    return HAL_TIM_Base_Stop_IT(manager->config.delta_timer) == HAL_OK;
-}
-
 static atlas_err_t joint_manager_notify_delta_timer_handler(
     joint_manager_t* manager)
 {
@@ -368,17 +354,18 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
                                                        manager->delta_time,
                                                        &measured_position);
 
-    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
     if (err != MOTOR_DRIVER_ERR_OK) {
-        event.type = SYSTEM_EVENT_TYPE_FAULT;
-        event.payload.fault = (system_event_payload_fault_t){};
+        if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
+            return ATLAS_ERR_FAIL;
+        }
     } else {
-        event.type = SYSTEM_EVENT_TYPE_DATA;
-        event.payload.data.position = measured_position;
-    }
+        system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
+        event.type = SYSTEM_EVENT_TYPE_JOINT_DATA;
+        event.payload.joint_data.position = measured_position;
 
-    if (!joint_manager_send_system_event(&event)) {
-        return ATLAS_ERR_FAIL;
+        if (!joint_manager_send_system_event(&event)) {
+            return ATLAS_ERR_FAIL;
+        }
     }
 
     return ATLAS_ERR_OK;
@@ -425,10 +412,6 @@ static atlas_err_t joint_manager_event_start_handler(
         return ATLAS_ERR_ALREADY_RUNNING;
     }
 
-    if (!joint_manager_start_delta_timer(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
-
     step_motor_reset(&manager->motor);
 
     manager->is_running = true;
@@ -447,10 +430,6 @@ static atlas_err_t joint_manager_event_stop_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (!joint_manager_stop_delta_timer(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
-
     step_motor_reset(&manager->motor);
 
     manager->is_running = false;
@@ -458,20 +437,22 @@ static atlas_err_t joint_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t joint_manager_event_data_handler(
+static atlas_err_t joint_manager_event_joint_data_handler(
     joint_manager_t* manager,
-    joint_event_payload_data_t const* data)
+    joint_event_payload_joint_data_t const* joint_data)
 {
-    ATLAS_ASSERT(manager && data);
+    ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    ATLAS_LOG(TAG, "goal position: %d * 100", (int32_t)data->position * 100);
+    ATLAS_LOG(TAG,
+              "goal position: %d * 100",
+              (int32_t)joint_data->position * 100);
 
-    manager->goal_position = data->position;
+    manager->goal_position = joint_data->position;
 
     return ATLAS_ERR_OK;
 }
@@ -490,9 +471,10 @@ static atlas_err_t joint_manager_event_handler(joint_manager_t* manager,
             return joint_manager_event_stop_handler(manager,
                                                     &event->payload.stop);
         }
-        case JOINT_EVENT_TYPE_DATA: {
-            return joint_manager_event_data_handler(manager,
-                                                    &event->payload.data);
+        case JOINT_EVENT_TYPE_JOINT_DATA: {
+            return joint_manager_event_joint_data_handler(
+                manager,
+                &event->payload.joint_data);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_EVENT;
@@ -589,11 +571,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
             .fault_user = manager,
             .fault_get_current = motor_driver_fault_get_current});
 
-    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
-                            .type = SYSTEM_EVENT_TYPE_READY};
-    event.payload.ready = (system_event_payload_ready_t){};
-
-    if (!joint_manager_send_system_event(&event)) {
+    if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_READY)) {
         return ATLAS_ERR_FAIL;
     }
 

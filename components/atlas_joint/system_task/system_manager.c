@@ -97,6 +97,61 @@ static atlas_err_t system_manager_notify_retry_timer_handler(
     return ATLAS_ERR_OK;
 }
 
+static atlas_err_t system_manager_notify_packet_ready_handler(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    packet_event_t event = {.type = PACKET_EVENT_TYPE_START};
+    event.payload.start = (packet_event_payload_start_t){};
+
+    if (!system_manager_send_packet_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t system_manager_event_joint_ready_handler(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    manager->is_joint_ready = true;
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t system_manager_notify_fault_handler(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager );
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_FAULT};
+    event.payload.joint_fault = (packet_event_payload_joint_fault_t){};
+
+    if (!system_manager_send_packet_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
 static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
                                                  system_notify_t notify)
 {
@@ -109,11 +164,11 @@ static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_start_handler(
+static atlas_err_t system_manager_event_joint_start_handler(
     system_manager_t* manager,
-    system_event_payload_start_t const* start)
+    system_event_payload_joint_start_t const* joint_start)
 {
-    ATLAS_ASSERT(manager && start);
+    ATLAS_ASSERT(manager && joint_start);
     ATLAS_LOG_FUNC(TAG);
 
     if (manager->is_joint_ready) {
@@ -132,11 +187,11 @@ static atlas_err_t system_manager_event_start_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_stop_handler(
+static atlas_err_t system_manager_event_joint_stop_handler(
     system_manager_t* manager,
-    system_event_payload_stop_t const* stop)
+    system_event_payload_joint_stop_t const* joint_stop)
 {
-    ATLAS_ASSERT(manager && stop);
+    ATLAS_ASSERT(manager && joint_stop);
     ATLAS_LOG_FUNC(TAG);
 
     joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP};
@@ -149,15 +204,15 @@ static atlas_err_t system_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_joint_data_handler(
+static atlas_err_t system_manager_event_measure_joint_data_handler(
     system_manager_t* manager,
-    system_event_payload_data_t const* data)
+    system_event_payload_joint_data_t const* joint_data)
 {
-    ATLAS_ASSERT(manager && data);
+    ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
-    packet_event_t event = {.type = PACKET_EVENT_TYPE_DATA};
-    event.payload.data.position = data->position;
+    packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_DATA};
+    event.payload.joint_data.position = joint_data->position;
 
     if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -166,75 +221,17 @@ static atlas_err_t system_manager_event_joint_data_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_packet_data_handler(
+static atlas_err_t system_manager_event_reference_joint_data_handler(
     system_manager_t* manager,
-    system_event_payload_data_t const* data)
+    system_event_payload_joint_data_t const* joint_data)
 {
-    ATLAS_ASSERT(manager && data);
+    ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
-    joint_event_t event = {.type = JOINT_EVENT_TYPE_DATA};
-    event.payload.data.position = data->position;
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_JOINT_DATA};
+    event.payload.joint_data.position = joint_data->position;
 
     if (!system_manager_send_joint_event(&event)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    return ATLAS_ERR_OK;
-}
-
-static atlas_err_t system_manager_event_joint_ready_handler(
-    system_manager_t* manager,
-    system_event_payload_ready_t const* ready)
-{
-    ATLAS_ASSERT(manager && ready);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
-    manager->is_joint_ready = true;
-
-    return ATLAS_ERR_OK;
-}
-
-static atlas_err_t system_manager_event_packet_ready_handler(
-    system_manager_t* manager,
-    system_event_payload_ready_t const* ready)
-{
-    ATLAS_ASSERT(manager && ready);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
-    packet_event_t event = {.type = PACKET_EVENT_TYPE_START};
-    event.payload.start = (packet_event_payload_start_t){};
-
-    if (!system_manager_send_packet_event(&event)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    return ATLAS_ERR_OK;
-}
-
-static atlas_err_t system_manager_event_fault_handler(
-    system_manager_t* manager,
-    system_event_payload_fault_t const* fault)
-{
-    ATLAS_ASSERT(manager && fault);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
-    packet_event_t event = {.type = PACKET_EVENT_TYPE_FAULT};
-    event.payload.fault = (packet_event_payload_fault_t){};
-
-    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -247,51 +244,32 @@ static atlas_err_t system_manager_event_handler(system_manager_t* manager,
     ATLAS_ASSERT(manager && event);
 
     switch (event->type) {
-        case SYSTEM_EVENT_TYPE_START: {
-            return system_manager_event_start_handler(manager,
-                                                      &event->payload.start);
+        case SYSTEM_EVENT_TYPE_JOINT_START: {
+            return system_manager_event_joint_start_handler(
+                manager,
+                &event->payload.joint_start);
         }
-        case SYSTEM_EVENT_TYPE_STOP: {
-            return system_manager_event_stop_handler(manager,
-                                                     &event->payload.stop);
+        case SYSTEM_EVENT_TYPE_JOINT_STOP: {
+            return system_manager_event_joint_stop_handler(
+                manager,
+                &event->payload.joint_stop);
         }
-        case SYSTEM_EVENT_TYPE_DATA: {
+        case SYSTEM_EVENT_TYPE_JOINT_DATA: {
             switch (event->origin) {
                 case SYSTEM_EVENT_ORIGIN_JOINT: {
-                    return system_manager_event_joint_data_handler(
+                    return system_manager_event_measure_joint_data_handler(
                         manager,
-                        &event->payload.data);
+                        &event->payload.joint_data);
                 }
                 case SYSTEM_EVENT_ORIGIN_PACKET: {
-                    return system_manager_event_packet_data_handler(
+                    return system_manager_event_reference_joint_data_handler(
                         manager,
-                        &event->payload.data);
+                        &event->payload.joint_data);
                 }
                 default: {
                     return ATLAS_ERR_UNKNOWN_ORIGIN;
                 }
             }
-        }
-        case SYSTEM_EVENT_TYPE_READY: {
-            switch (event->origin) {
-                case SYSTEM_EVENT_ORIGIN_JOINT: {
-                    return system_manager_event_joint_ready_handler(
-                        manager,
-                        &event->payload.ready);
-                }
-                case SYSTEM_EVENT_ORIGIN_PACKET: {
-                    return system_manager_event_packet_ready_handler(
-                        manager,
-                        &event->payload.ready);
-                }
-                default: {
-                    return ATLAS_ERR_UNKNOWN_ORIGIN;
-                }
-            }
-        }
-        case SYSTEM_EVENT_TYPE_FAULT: {
-            return system_manager_event_fault_handler(manager,
-                                                      &event->payload.fault);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_EVENT;

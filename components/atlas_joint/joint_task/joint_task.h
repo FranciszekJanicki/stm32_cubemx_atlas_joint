@@ -11,4 +11,7 @@ typedef struct {
 
 atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx);
 
+void joint_task_delta_timer_callback(void);
+void joint_task_pwm_pulse_callback(void);
+
 #endif // JOINT_TASK_JOINT_TASK_H
