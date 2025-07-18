@@ -17,9 +17,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef atlas_joint_num_t joint_num_t;
-
 typedef struct {
+    TIM_HandleTypeDef* delta_timer;
+
     GPIO_TypeDef* drv8825_gpio;
     uint32_t drv8825_dir_pin;
     TIM_HandleTypeDef* drv8825_pwm_timer;
@@ -39,8 +39,6 @@ typedef struct {
     float32_t delta_time;
     bool is_running;
 
-    QueueHandle_t queue;
-
     as5600_t as5600;
     drv8825_t drv8825;
     ina226_t ina226;
@@ -48,7 +46,6 @@ typedef struct {
     pid_regulator_t regulator;
     motor_driver_t driver;
 
-    joint_num_t num;
     joint_config_t config;
 } joint_manager_t;
 
@@ -60,8 +57,6 @@ typedef struct {
 } joint_parameters_t;
 
 atlas_err_t joint_manager_initialize(joint_manager_t* manager,
-                                     joint_num_t num,
-                                     QueueHandle_t queue,
                                      joint_config_t const* config,
                                      joint_parameters_t const* parameters);
 atlas_err_t joint_manager_process(joint_manager_t* manager);

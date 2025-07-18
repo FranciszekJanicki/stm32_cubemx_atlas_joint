@@ -10,8 +10,8 @@
 #include <stdbool.h>
 
 typedef struct {
-    GPIO_TypeDef* hmi_packet_ready_gpio;
-    uint16_t hmi_packet_ready_pin;
+    GPIO_TypeDef* robot_packet_ready_gpio;
+    uint16_t robot_packet_ready_pin;
 
     SPI_HandleTypeDef* packet_spi;
 } packet_config_t;
@@ -22,7 +22,8 @@ typedef struct {
     packet_config_t config;
 } packet_manager_t;
 
-atlas_err_t packet_manager_initialize(packet_manager_t* manager, packet_config_t const* config);
+atlas_err_t packet_manager_initialize(packet_manager_t* manager,
+                                      packet_config_t const* config);
 atlas_err_t packet_manager_process(packet_manager_t* manager);
 
 #endif // PACKET_TASK_PACKET_MANAGER_H

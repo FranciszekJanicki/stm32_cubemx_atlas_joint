@@ -1,12 +1,12 @@
 add_subdirectory(common)
 add_subdirectory(system_task)
-add_subdirectory(joints_task)
+add_subdirectory(joint_task)
 add_subdirectory(packet_task)
 
 add_library(atlas_rob STATIC)
 
 target_sources(atlas_rob PRIVATE 
-    atlas_rob.c
+    atlas_joint.c
 )  
 
 target_include_directories(atlas_rob PUBLIC
@@ -16,7 +16,7 @@ target_include_directories(atlas_rob PUBLIC
 target_link_libraries(atlas_rob PUBLIC 
     common
     system_task
-    joints_task
+    joint_task
     uart_task
     packet_task
     stm32cubemx

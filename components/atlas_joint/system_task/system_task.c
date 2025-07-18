@@ -20,10 +20,13 @@
 #define SYSTEM_TIMER_ID (NULL)
 #define SYSTEM_TIMER_AUTORELOAD (pdFALSE)
 
-static void system_task_func(void*)
+static void system_task_func(void* ctx)
 {
+    system_task_ctx_t* task_ctx = (system_task_ctx_t*)ctx;
+
     system_manager_t manager;
-    ATLAS_LOG_ON_ERR(SYSTEM_TASK_NAME, system_manager_initialize(&manager));
+    ATLAS_LOG_ON_ERR(SYSTEM_TASK_NAME,
+                     system_manager_initialize(&manager, &task_ctx->config));
 
     while (1) {
         ATLAS_LOG_ON_ERR(SYSTEM_TASK_NAME, system_manager_process(&manager));
@@ -43,7 +46,7 @@ static void system_timer_callback(TimerHandle_t timer)
     portYIELD_FROM_ISR(task_woken);
 }
 
-static TaskHandle_t system_task_create_task(void)
+static TaskHandle_t system_task_create_task(system_task_ctx_t* task_ctx)
 {
     static StaticTask_t system_task_buffer;
     static StackType_t system_task_stack[SYSTEM_TASK_STACK_DEPTH];
@@ -51,7 +54,7 @@ static TaskHandle_t system_task_create_task(void)
     return xTaskCreateStatic(system_task_func,
                              SYSTEM_TASK_NAME,
                              SYSTEM_TASK_STACK_DEPTH,
-                             NULL,
+                             task_ctx,
                              SYSTEM_TASK_PRIORITY,
                              system_task_stack,
                              &system_task_buffer);
@@ -80,11 +83,28 @@ static TimerHandle_t system_task_create_timer(void)
                               &system_timer_buffer);
 }
 
-void system_task_initialize(void)
+atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
 {
-    queue_manager_set(QUEUE_TYPE_SYSTEM, system_task_create_queue());
-    timer_manager_set(TIMER_TYPE_SYSTEM, system_task_create_timer());
-    task_manager_set(TASK_TYPE_SYSTEM, system_task_create_task());
+    QueueHandle_t system_queue = system_task_create_queue();
+    if (system_queue == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    TimerHandle_t system_timer = system_task_create_timer();
+    if (system_timer == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    TaskHandle_t system_task = system_task_create_task(task_ctx);
+    if (system_task == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    queue_manager_set(QUEUE_TYPE_SYSTEM, system_queue);
+    task_manager_set(TASK_TYPE_SYSTEM, system_task);
+    timer_manager_set(TIMER_TYPE_SYSTEM, system_timer);
+
+    return ATLAS_ERR_OK;
 }
 
 #undef SYSTEM_TASK_STACK_DEPTH

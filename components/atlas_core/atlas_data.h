@@ -46,7 +46,8 @@ typedef struct {
 bool atlas_is_data_equal(atlas_data_t const* data1, atlas_data_t const* data2);
 bool atlas_is_cartesian_data_equal(atlas_cartesian_data_t const* data1,
                                    atlas_cartesian_data_t const* data2);
-bool atlas_is_joints_data_equal(atlas_joints_data_t const* data1, atlas_joints_data_t const* data2);
+bool atlas_is_joints_data_equal(atlas_joints_data_t const* data1,
+                                atlas_joints_data_t const* data2);
 
 void atlas_print_data(atlas_data_t const* data);
 void atlas_print_cartesian_data(atlas_cartesian_data_t const* data);

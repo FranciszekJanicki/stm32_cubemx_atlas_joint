@@ -3,7 +3,6 @@ add_library(joint_task STATIC)
 target_sources(joint_task PRIVATE 
     joint_task.c
     joint_manager.c
-    joint_interface.c
 )
 
 target_include_directories(joint_task PUBLIC
@@ -17,7 +16,6 @@ target_link_libraries(joint_task PUBLIC
     pid_regulator
     stm32cubemx
     as5600
-    tca9548
     ina226
     common
 )
