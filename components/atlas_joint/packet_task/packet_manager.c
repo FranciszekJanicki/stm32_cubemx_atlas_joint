@@ -52,9 +52,10 @@ static inline bool packet_manager_send_robot_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    return true;
-    // HAL_SPI_Transmit(manager->config.packet_spi,
-    // (uint8_t*)packet, sizeof(*packet), 100) == HAL_OK;
+    return HAL_SPI_Transmit(manager->config.packet_spi,
+                            (uint8_t*)packet,
+                            sizeof(*packet),
+                            100) == HAL_OK;
 }
 
 static inline bool packet_manager_receive_joint_packet(
@@ -63,9 +64,10 @@ static inline bool packet_manager_receive_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    return true;
-    // HAL_SPI_Receive(manager->config.packet_spi,
-    // (uint8_t*)packet, sizeof(*packet), 100) == HAL_OK;
+    return HAL_SPI_Receive(manager->config.packet_spi,
+                           (uint8_t*)packet,
+                           sizeof(*packet),
+                           100) == HAL_OK;
 }
 
 static inline void packet_manager_set_robot_packet_ready_pin(
