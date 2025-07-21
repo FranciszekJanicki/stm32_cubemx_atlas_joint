@@ -139,7 +139,7 @@ static atlas_err_t packet_manager_packet_joint_start_handler(
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
-    event.payload.joint_start = *joint_start;
+    event.payload.joint_start = (system_event_payload_joint_start_t){};
 
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -161,7 +161,7 @@ static atlas_err_t packet_manager_packet_joint_stop_handler(
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_STOP};
-    event.payload.joint_stop = *joint_stop;
+    event.payload.joint_stop = (system_event_payload_joint_stop_t){};
 
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -296,7 +296,9 @@ static atlas_err_t packet_manager_event_joint_data_handler(
     }
 
     atlas_robot_packet_t packet = {.type = ATLAS_ROBOT_PACKET_TYPE_JOINT_DATA};
-    packet.payload.joint_data.position = joint_data->position;
+    packet.origin = joint_data->num;
+    packet.timestamp = joint_data->timestamp;
+    packet.payload.joint_data = joint_data->data;
 
     ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
 
@@ -315,7 +317,9 @@ static atlas_err_t packet_manager_event_joint_fault_handler(
     }
 
     atlas_robot_packet_t packet = {.type = ATLAS_ROBOT_PACKET_TYPE_JOINT_FAULT};
-    packet.payload.joint_fault = *joint_fault;
+    packet.origin = joint_fault->num;
+    packet.timestamp = joint_fault->timestamp;
+    packet.payload.joint_fault = joint_fault->fault;
 
     ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
 
@@ -334,7 +338,9 @@ static atlas_err_t packet_manager_event_joint_ready_handler(
     }
 
     atlas_robot_packet_t packet = {.type = ATLAS_ROBOT_PACKET_TYPE_JOINT_READY};
-    packet.payload.joint_ready = *joint_ready;
+    packet.origin = joint_ready->num;
+    packet.timestamp = joint_ready->timestamp;
+    packet.payload.joint_ready = joint_ready->ready;
 
     ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
 

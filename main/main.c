@@ -2,12 +2,14 @@
 #include "atlas_joint.h"
 #include "gpio.h"
 #include "i2c.h"
+#include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
 
 static atlas_joint_config_t config = {
-    .system_ctx = {.config = {.num = ATLAS_JOINT_NUM_1}},
+    .system_ctx = {.config = {.num = ATLAS_JOINT_NUM_1,
+                              .timestamp_rtc = &hrtc}},
     .uart_ctx = {.uart = &huart2},
     .packet_ctx = {.config = {.robot_packet_ready_gpio = GPIOA,
                               .robot_packet_ready_pin = GPIO_PIN_0,
@@ -45,6 +47,7 @@ int main(void)
     MX_TIM3_Init();
     MX_I2C1_Init();
     MX_SPI1_Init();
+    MX_RTC_Init();
 
     HAL_Delay(50);
 

@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "stm32l476xx.h"
 #include "stm32l4xx_hal.h"
+#include "stm32l4xx_hal_rtc.h"
 #include "task.h"
 #include <stdint.h>
 #include <string.h>
@@ -62,6 +63,29 @@ static inline bool system_manager_stop_retry_timer(void)
 {
     return xTimerStop(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
            pdPASS;
+}
+
+static inline bool system_manager_get_rtc_timestamp(
+    system_manager_t* manager,
+    atlas_timestamp_t* timestamp)
+{
+    ATLAS_ASSERT(manager && timestamp);
+
+    RTC_TimeTypeDef rtc_time;
+    if (HAL_RTC_GetTime(manager->config.timestamp_rtc,
+                        &rtc_time,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    RTC_DateTypeDef rtc_date;
+    if (HAL_RTC_GetDate(manager->config.timestamp_rtc,
+                        &rtc_date,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    return true;
 }
 
 static atlas_err_t system_manager_notify_retry_timer_handler(
@@ -198,6 +222,8 @@ static atlas_err_t system_manager_event_joint_start_handler(
         return ATLAS_ERR_FAIL;
     }
 
+    system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
+
     return ATLAS_ERR_OK;
 }
 
@@ -214,6 +240,8 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     if (!system_manager_send_joint_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
+
+    memset(&manager->start_timestamp, 0, sizeof(manager->start_timestamp));
 
     return ATLAS_ERR_OK;
 }
@@ -232,7 +260,9 @@ static atlas_err_t system_manager_event_measured_joint_data_handler(
     manager->measured_position = joint_data->position;
 
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_DATA};
-    event.payload.joint_data.position = manager->measured_position;
+    event.payload.joint_data.num = manager->config.num;
+    event.payload.joint_data.data.position = manager->measured_position;
+    event.payload.joint_data.timestamp = manager->current_timestamp;
 
     if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;

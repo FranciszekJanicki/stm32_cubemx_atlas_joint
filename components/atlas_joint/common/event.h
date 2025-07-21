@@ -61,9 +61,21 @@ typedef enum {
 
 typedef int packet_event_payload_start_t;
 typedef int packet_event_payload_stop_t;
-typedef atlas_joint_data_t packet_event_payload_joint_data_t;
-typedef atlas_joint_ready_t packet_event_payload_joint_ready_t;
-typedef atlas_joint_fault_t packet_event_payload_joint_fault_t;
+typedef struct {
+    atlas_joint_num_t num;
+    atlas_timestamp_t timestamp;
+    atlas_joint_data_t data;
+} packet_event_payload_joint_data_t;
+typedef struct {
+    atlas_joint_num_t num;
+    atlas_timestamp_t timestamp;
+    atlas_joint_ready_t ready;
+} packet_event_payload_joint_ready_t;
+typedef struct {
+    atlas_joint_num_t num;
+    atlas_timestamp_t timestamp;
+    atlas_joint_fault_t fault;
+} packet_event_payload_joint_fault_t;
 
 typedef union {
     packet_event_payload_start_t start;

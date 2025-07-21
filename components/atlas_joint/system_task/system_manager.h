@@ -3,20 +3,22 @@
 
 #include "FreeRTOS.h"
 #include "common.h"
-#include "queue.h"
 #include "stm32l476xx.h"
 #include "stm32l4xx_hal.h"
-#include "task.h"
-#include "timers.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
     atlas_joint_num_t num;
+    RTC_HandleTypeDef* timestamp_rtc;
 } system_config_t;
 
 typedef struct {
     bool is_running;
     bool is_packet_running;
+
+    atlas_timestamp_t current_timestamp;
+    atlas_timestamp_t start_timestamp;
 
     float32_t referenced_position;
     float32_t measured_position;
