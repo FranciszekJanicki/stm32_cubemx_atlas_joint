@@ -117,7 +117,7 @@ static atlas_err_t system_manager_notify_packet_ready_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_joint_ready_handler(
+static atlas_err_t system_manager_notify_joint_ready_handler(
     system_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
@@ -132,10 +132,10 @@ static atlas_err_t system_manager_event_joint_ready_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_notify_fault_handler(
+static atlas_err_t system_manager_notify_joint_fault_handler(
     system_manager_t* manager)
 {
-    ATLAS_ASSERT(manager );
+    ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
@@ -159,6 +159,15 @@ static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
 
     if (notify & SYSTEM_NOTIFY_RETRY_TIMER) {
         ATLAS_RET_ON_ERR(system_manager_notify_retry_timer_handler(manager));
+    }
+    if (notify & SYSTEM_NOTIFY_JOINT_READY) {
+        ATLAS_RET_ON_ERR(system_manager_notify_joint_ready_handler(manager));
+    }
+    if (notify & SYSTEM_NOTIFY_JOINT_FAULT) {
+        ATLAS_RET_ON_ERR(system_manager_notify_joint_fault_handler(manager));
+    }
+    if (notify & SYSTEM_NOTIFY_PACKET_READY) {
+        ATLAS_RET_ON_ERR(system_manager_notify_packet_ready_handler(manager));
     }
 
     return ATLAS_ERR_OK;
@@ -204,15 +213,21 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_measure_joint_data_handler(
+static atlas_err_t system_manager_event_measured_joint_data_handler(
     system_manager_t* manager,
     system_event_payload_joint_data_t const* joint_data)
 {
     ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
+    if (manager->measured_position == joint_data->position) {
+        return ATLAS_ERR_OK;
+    }
+
+    manager->measured_position = joint_data->position;
+
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_DATA};
-    event.payload.joint_data.position = joint_data->position;
+    event.payload.joint_data.position = manager->measured_position;
 
     if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -221,15 +236,21 @@ static atlas_err_t system_manager_event_measure_joint_data_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t system_manager_event_reference_joint_data_handler(
+static atlas_err_t system_manager_event_referenced_joint_data_handler(
     system_manager_t* manager,
     system_event_payload_joint_data_t const* joint_data)
 {
     ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
+    if (manager->measured_position == joint_data->position) {
+        return ATLAS_ERR_OK;
+    }
+
+    manager->referenced_position = joint_data->position;
+
     joint_event_t event = {.type = JOINT_EVENT_TYPE_JOINT_DATA};
-    event.payload.joint_data.position = joint_data->position;
+    event.payload.joint_data.position = manager->referenced_position;
 
     if (!system_manager_send_joint_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -257,12 +278,12 @@ static atlas_err_t system_manager_event_handler(system_manager_t* manager,
         case SYSTEM_EVENT_TYPE_JOINT_DATA: {
             switch (event->origin) {
                 case SYSTEM_EVENT_ORIGIN_JOINT: {
-                    return system_manager_event_measure_joint_data_handler(
+                    return system_manager_event_measured_joint_data_handler(
                         manager,
                         &event->payload.joint_data);
                 }
                 case SYSTEM_EVENT_ORIGIN_PACKET: {
-                    return system_manager_event_reference_joint_data_handler(
+                    return system_manager_event_referenced_joint_data_handler(
                         manager,
                         &event->payload.joint_data);
                 }

@@ -19,6 +19,9 @@ typedef struct {
     bool is_joint_ready;
     bool is_packet_ready;
 
+    float32_t referenced_position;
+    float32_t measured_position;
+
     system_config_t config;
 } system_manager_t;
 

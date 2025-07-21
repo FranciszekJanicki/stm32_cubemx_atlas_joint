@@ -2,6 +2,9 @@
 #include "FreeRTOS.h"
 #include "common.h"
 #include "queue.h"
+#include "stm32l476xx.h"
+#include "stm32l4xx.h"
+#include "stm32l4xx_hal.h"
 #include "task.h"
 #include <stdint.h>
 
@@ -52,9 +55,13 @@ static inline bool packet_manager_send_robot_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
+    uint8_t buffer[ROBOT_PACKET_SIZE];
+
+    atlas_robot_packet_encode(packet, &buffer);
+
     return HAL_SPI_Transmit(manager->config.packet_spi,
-                            (uint8_t*)packet,
-                            sizeof(*packet),
+                            buffer,
+                            sizeof(buffer),
                             100) == HAL_OK;
 }
 
@@ -64,10 +71,16 @@ static inline bool packet_manager_receive_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    return HAL_SPI_Receive(manager->config.packet_spi,
-                           (uint8_t*)packet,
-                           sizeof(*packet),
-                           100) == HAL_OK;
+    uint8_t buffer[JOINT_PACKET_SIZE];
+
+    HAL_StatusTypeDef err = HAL_SPI_Receive(manager->config.packet_spi,
+                                            buffer,
+                                            sizeof(buffer),
+                                            100);
+
+    atlas_joint_packet_decode(&buffer, packet);
+
+    return err == HAL_OK;
 }
 
 static inline void packet_manager_set_robot_packet_ready_pin(

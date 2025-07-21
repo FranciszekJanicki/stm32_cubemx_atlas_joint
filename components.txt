@@ -7,4 +7,6 @@ git@github.com:FranciszekJanicki/motor_driver.git motor_driver
 git@github.com:FranciszekJanicki/handle_manager.git handle_manager
 git@github.com:FranciszekJanicki/atlas_core.git atlas_core
 git@github.com:FranciszekJanicki/uart_task.git uart_task
+git@github.com:FranciszekJanicki/utility.git utility
+
 

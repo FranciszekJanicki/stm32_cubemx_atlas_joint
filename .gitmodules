@@ -25,3 +25,6 @@
 [submodule "components/uart_task"]
 	path = components/uart_task
 	url = git@github.com:FranciszekJanicki/uart_task.git
+[submodule "components/utility"]
+	path = components/utility
+	url = git@github.com:FranciszekJanicki/utility.git
