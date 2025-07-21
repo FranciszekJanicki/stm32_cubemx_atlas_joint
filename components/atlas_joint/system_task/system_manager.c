@@ -10,7 +10,7 @@
 
 static char const* const TAG = "system_manager";
 
-static inline bool system_manager_has_system_event()
+static inline bool system_manager_has_system_event(void)
 {
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM));
 }
@@ -52,18 +52,14 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static inline bool system_manager_start_retry_timer(system_manager_t* manager)
+static inline bool system_manager_start_retry_timer(void)
 {
-    ATLAS_ASSERT(manager);
-
     xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
         pdPASS;
 }
 
-static inline bool system_manager_stop_retry_timer(system_manager_t* manager)
+static inline bool system_manager_stop_retry_timer(void)
 {
-    ATLAS_ASSERT(manager);
-
     return xTimerStop(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
            pdPASS;
 }
@@ -78,20 +74,22 @@ static atlas_err_t system_manager_notify_retry_timer_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (manager->is_joint_ready) {
-        joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
+    inline bool (*retry_timer_function)(void) =
+        system_manager_start_retry_timer;
 
-        if (!system_manager_send_joint_event(&event)) {
+    if (manager->is_packet_running) {
+        packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
+        event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
+
+        if (!system_manager_send_packet_event(&event)) {
             return ATLAS_ERR_FAIL;
         }
 
-        if (!system_manager_stop_retry_timer(manager)) {
-            return ATLAS_ERR_FAIL;
-        }
-    } else {
-        if (!system_manager_start_retry_timer(manager)) {
-            return ATLAS_ERR_FAIL;
-        }
+        retry_timer_function = system_manager_stop_retry_timer;
+    }
+
+    if (!retry_timer_function()) {
+        return ATLAS_ERR_FAIL;
     }
 
     return ATLAS_ERR_OK;
@@ -114,6 +112,8 @@ static atlas_err_t system_manager_notify_packet_ready_handler(
         return ATLAS_ERR_FAIL;
     }
 
+    manager->is_packet_running = true;
+
     return ATLAS_ERR_OK;
 }
 
@@ -127,7 +127,18 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    manager->is_joint_ready = true;
+    if (manager->is_packet_running) {
+        packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
+        event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
+
+        if (!system_manager_send_packet_event(&event)) {
+            return ATLAS_ERR_FAIL;
+        }
+    } else {
+        if (!system_manager_start_retry_timer()) {
+            return ATLAS_ERR_FAIL;
+        }
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -180,17 +191,11 @@ static atlas_err_t system_manager_event_joint_start_handler(
     ATLAS_ASSERT(manager && joint_start);
     ATLAS_LOG_FUNC(TAG);
 
-    if (manager->is_joint_ready) {
-        joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
-        event.payload.start = (joint_event_payload_start_t){};
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
+    event.payload.start = (joint_event_payload_start_t){};
 
-        if (!system_manager_send_joint_event(&event)) {
-            return ATLAS_ERR_FAIL;
-        }
-    } else {
-        if (!system_manager_start_retry_timer(manager)) {
-            return ATLAS_ERR_FAIL;
-        }
+    if (!system_manager_send_joint_event(&event)) {
+        return ATLAS_ERR_FAIL;
     }
 
     return ATLAS_ERR_OK;
@@ -323,8 +328,7 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     ATLAS_ASSERT(manager && config);
 
     manager->is_running = true;
-    manager->is_joint_ready = false;
-    manager->is_packet_ready = false;
+    manager->is_packet_running = false;
     manager->config = *config;
 
     return ATLAS_ERR_OK;

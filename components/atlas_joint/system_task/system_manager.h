@@ -16,8 +16,7 @@ typedef struct {
 
 typedef struct {
     bool is_running;
-    bool is_joint_ready;
-    bool is_packet_ready;
+    bool is_packet_running;
 
     float32_t referenced_position;
     float32_t measured_position;
