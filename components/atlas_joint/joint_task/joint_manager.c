@@ -380,7 +380,7 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    float32_t measured_position;
+    float32_t measured_position = 0.0F;
     motor_driver_err_t err = motor_driver_set_position(&manager->driver,
                                                        manager->goal_position,
                                                        manager->delta_time,

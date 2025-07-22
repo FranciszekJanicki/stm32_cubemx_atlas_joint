@@ -11,10 +11,14 @@
 typedef struct {
     atlas_joint_num_t num;
     RTC_HandleTypeDef* timestamp_rtc;
+
+    TIM_HandleTypeDef* delta_timer;        // test
+    TIM_HandleTypeDef* packet_ready_timer; // test
 } system_config_t;
 
 typedef struct {
     bool is_running;
+    bool is_joint_running;
     bool is_packet_running;
 
     atlas_timestamp_t current_timestamp;

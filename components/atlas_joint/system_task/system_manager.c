@@ -16,18 +16,28 @@ static inline bool system_manager_has_system_event(void)
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM));
 }
 
-static inline bool system_manager_send_joint_event(joint_event_t const* event)
+static inline bool system_manager_send_joint_event(system_manager_t* manager,
+                                                   joint_event_t const* event)
 {
     ATLAS_ASSERT(event);
+
+    if (!manager->is_joint_running && event->type != JOINT_EVENT_TYPE_START) {
+        return false;
+    }
 
     return xQueueSend(queue_manager_get(QUEUE_TYPE_JOINT),
                       event,
                       pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static inline bool system_manager_send_packet_event(packet_event_t const* event)
+static inline bool system_manager_send_packet_event(system_manager_t* manager,
+                                                    packet_event_t const* event)
 {
     ATLAS_ASSERT(event);
+
+    if (!manager->is_packet_running && event->type != PACKET_EVENT_TYPE_START) {
+        return false;
+    }
 
     return xQueueSend(queue_manager_get(QUEUE_TYPE_PACKET),
                       event,
@@ -61,8 +71,8 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
 
 static inline bool system_manager_start_retry_timer(void)
 {
-    xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
-        pdPASS;
+    return xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM),
+                       pdMS_TO_TICKS(1)) == pdPASS;
 }
 
 static inline bool system_manager_stop_retry_timer(void)
@@ -104,18 +114,19 @@ static atlas_err_t system_manager_notify_retry_timer_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    inline bool (*retry_timer_function)(void) =
-        system_manager_start_retry_timer;
+    bool (*retry_timer_function)(void) = NULL;
 
     if (manager->is_packet_running) {
         packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
         event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
 
-        if (!system_manager_send_packet_event(&event)) {
+        if (!system_manager_send_packet_event(manager, &event)) {
             return ATLAS_ERR_FAIL;
         }
 
         retry_timer_function = system_manager_stop_retry_timer;
+    } else {
+        retry_timer_function = system_manager_start_retry_timer;
     }
 
     if (!retry_timer_function()) {
@@ -138,11 +149,14 @@ static atlas_err_t system_manager_notify_packet_ready_handler(
     packet_event_t event = {.type = PACKET_EVENT_TYPE_START};
     event.payload.start = (packet_event_payload_start_t){};
 
-    if (!system_manager_send_packet_event(&event)) {
+    if (!system_manager_send_packet_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
 
     manager->is_packet_running = true;
+
+    // test
+    HAL_TIM_Base_Start_IT(manager->config.packet_ready_timer);
 
     return ATLAS_ERR_OK;
 }
@@ -152,7 +166,6 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
 {
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
-
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
     }
@@ -161,7 +174,7 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
         packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
         event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
 
-        if (!system_manager_send_packet_event(&event)) {
+        if (!system_manager_send_packet_event(manager, &event)) {
             return ATLAS_ERR_FAIL;
         }
     } else {
@@ -186,7 +199,7 @@ static atlas_err_t system_manager_notify_joint_fault_handler(
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_FAULT};
     event.payload.joint_fault = (packet_event_payload_joint_fault_t){};
 
-    if (!system_manager_send_packet_event(&event)) {
+    if (!system_manager_send_packet_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -221,14 +234,24 @@ static atlas_err_t system_manager_event_joint_start_handler(
     ATLAS_ASSERT(manager && joint_start);
     ATLAS_LOG_FUNC(TAG);
 
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
     joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
     event.payload.start = (joint_event_payload_start_t){};
 
-    if (!system_manager_send_joint_event(&event)) {
+    if (!system_manager_send_joint_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
 
+    manager->is_joint_running = true;
+
     system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
+    atlas_timestamp_print(&manager->current_timestamp);
+
+    // test
+    HAL_TIM_Base_Start_IT(manager->config.delta_timer);
 
     return ATLAS_ERR_OK;
 }
@@ -240,10 +263,14 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     ATLAS_ASSERT(manager && joint_stop);
     ATLAS_LOG_FUNC(TAG);
 
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
     joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP};
     event.payload.stop = (joint_event_payload_stop_t){};
 
-    if (!system_manager_send_joint_event(&event)) {
+    if (!system_manager_send_joint_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -259,20 +286,24 @@ static atlas_err_t system_manager_event_measured_joint_data_handler(
     ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
     if (manager->measured_position == joint_data->position) {
         return ATLAS_ERR_OK;
     }
 
-    manager->measured_position = joint_data->position;
-
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_DATA};
     event.payload.joint_data.num = manager->config.num;
-    event.payload.joint_data.data.position = manager->measured_position;
     event.payload.joint_data.timestamp = manager->current_timestamp;
+    event.payload.joint_data.data.position = joint_data->position;
 
-    if (!system_manager_send_packet_event(&event)) {
+    if (!system_manager_send_packet_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
+
+    manager->measured_position = joint_data->position;
 
     return ATLAS_ERR_OK;
 }
@@ -284,18 +315,22 @@ static atlas_err_t system_manager_event_referenced_joint_data_handler(
     ATLAS_ASSERT(manager && joint_data);
     ATLAS_LOG_FUNC(TAG);
 
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
     if (manager->measured_position == joint_data->position) {
         return ATLAS_ERR_OK;
     }
 
-    manager->referenced_position = joint_data->position;
-
     joint_event_t event = {.type = JOINT_EVENT_TYPE_JOINT_DATA};
-    event.payload.joint_data.position = manager->referenced_position;
+    event.payload.joint_data.position = joint_data->position;
 
-    if (!system_manager_send_joint_event(&event)) {
+    if (!system_manager_send_joint_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
+
+    manager->referenced_position = joint_data->position;
 
     return ATLAS_ERR_OK;
 }
@@ -365,6 +400,7 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
 
     manager->is_running = true;
     manager->is_packet_running = false;
+    manager->is_joint_running = false;
     manager->config = *config;
 
     if (!system_manager_send_uart_notify(UART_NOTIFY_START)) {

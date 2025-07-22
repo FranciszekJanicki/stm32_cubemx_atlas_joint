@@ -231,10 +231,22 @@ static atlas_err_t packet_manager_notify_joint_packet_ready_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    atlas_joint_packet_t packet;
-    if (packet_manager_receive_joint_packet(manager, &packet)) {
-        ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager, &packet));
+    // atlas_joint_packet_t packet;
+    // if (packet_manager_receive_joint_packet(manager, &packet)) {
+    //     ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager,
+    //     &packet));
+    // }
+
+    // test
+    system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_DATA,
+                            .origin = SYSTEM_EVENT_ORIGIN_PACKET};
+    static float32_t position = 0.0F, step = 1.0F;
+    if (position > 359.0F || position < 1.0F) {
+        step *= -1.0F;
     }
+    event.payload.joint_data.position = position;
+    packet_manager_send_system_event(&event);
+    position += step;
 
     return ATLAS_ERR_OK;
 }
@@ -300,7 +312,12 @@ static atlas_err_t packet_manager_event_joint_data_handler(
     packet.timestamp = joint_data->timestamp;
     packet.payload.joint_data = joint_data->data;
 
-    ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
+    // if (!packet_manager_send_robot_packet(manager, &packet)) {
+    //     return ATLAS_ERR_FAIL;
+    // }
+
+    // test
+    ATLAS_LOG(TAG, "posiiton measured: %f", packet.payload.joint_data);
 
     return ATLAS_ERR_OK;
 }
@@ -321,7 +338,9 @@ static atlas_err_t packet_manager_event_joint_fault_handler(
     packet.timestamp = joint_fault->timestamp;
     packet.payload.joint_fault = joint_fault->fault;
 
-    ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
+    if (!packet_manager_send_robot_packet(manager, &packet)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -342,14 +361,14 @@ static atlas_err_t packet_manager_event_joint_ready_handler(
     packet.timestamp = joint_ready->timestamp;
     packet.payload.joint_ready = joint_ready->ready;
 
-    ATLAS_RET_ON_ERR(packet_manager_send_robot_packet(manager, &packet));
+    // if (!packet_manager_send_robot_packet(manager, &packet)) {
+    //     return ATLAS_ERR_FAIL;
+    // }
 
-    // test only
+    // test
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
-    if (!packet_manager_send_system_event(&event)) {
-        return ATLAS_ERR_FAIL;
-    }
+    packet_manager_send_system_event(&event);
 
     return ATLAS_ERR_OK;
 }
