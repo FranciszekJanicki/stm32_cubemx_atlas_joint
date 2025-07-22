@@ -84,3 +84,12 @@ void uart_task_transmit_done_callback(void)
 {
     bus_task_transmit_done_callback(task_manager_get(TASK_TYPE_UART));
 }
+
+#undef UART_TASK_STACK_DEPTH
+#undef UART_TASK_PRIORITY
+#undef UART_TASK_NAME
+
+#undef UART_BUFFER_STORAGE_SIZE
+
+#undef UART_STREAM_BUFFER_STORAGE_SIZE
+#undef UART_STREAM_BUFFER_TRIGGER
