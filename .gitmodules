@@ -16,9 +16,6 @@
 [submodule "components/motor_driver"]
 	path = components/motor_driver
 	url = git@github.com:FranciszekJanicki/motor_driver.git
-[submodule "components/handle_manager"]
-	path = components/handle_manager
-	url = git@github.com:FranciszekJanicki/handle_manager.git
 [submodule "components/atlas_core"]
 	path = components/atlas_core
 	url = git@github.com:FranciszekJanicki/atlas_core.git

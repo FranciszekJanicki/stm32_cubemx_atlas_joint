@@ -10,7 +10,7 @@ target_include_directories(common PUBLIC
 
 target_link_libraries(common PUBLIC
     atlas_core
-    handle_manager
+    utility
     stm32cubemx
 )
 
