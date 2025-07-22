@@ -317,7 +317,9 @@ static atlas_err_t packet_manager_event_joint_data_handler(
     // }
 
     // test
-    ATLAS_LOG(TAG, "posiiton measured: %f", packet.payload.joint_data);
+    ATLAS_LOG(TAG,
+              "position measured: %d [deg * 100]",
+              (int32_t)packet.payload.joint_data.position * 100);
 
     return ATLAS_ERR_OK;
 }
@@ -414,13 +416,14 @@ atlas_err_t packet_manager_process(packet_manager_t* manager)
 
     packet_notify_t notify;
     if (packet_manager_receive_packet_notify(&notify)) {
-        ATLAS_RET_ON_ERR(packet_manager_notify_handler(manager, notify));
+        ATLAS_LOG_ON_ERR(TAG, packet_manager_notify_handler(manager, notify));
     }
 
     packet_event_t event;
     while (packet_manager_has_packet_event()) {
         if (packet_manager_receive_packet_event(&event)) {
-            ATLAS_RET_ON_ERR(packet_manager_event_handler(manager, &event));
+            ATLAS_LOG_ON_ERR(TAG,
+                             packet_manager_event_handler(manager, &event));
         }
     }
 

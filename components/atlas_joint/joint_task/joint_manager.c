@@ -381,10 +381,11 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
     }
 
     float32_t measured_position = 0.0F;
-    motor_driver_err_t err = motor_driver_set_position(&manager->driver,
-                                                       manager->goal_position,
-                                                       manager->delta_time,
-                                                       &measured_position);
+    motor_driver_err_t err = MOTOR_DRIVER_ERR_OK;
+    // motor_driver_set_position(&manager->driver,
+    //                           manager->goal_position,
+    //                           manager->delta_time,
+    //                           &measured_position);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
         if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
@@ -444,7 +445,7 @@ static atlas_err_t joint_manager_event_start_handler(
         return ATLAS_ERR_ALREADY_RUNNING;
     }
 
-    step_motor_reset(&manager->motor);
+    //  step_motor_reset(&manager->motor);
 
     manager->is_running = true;
 
@@ -481,7 +482,7 @@ static atlas_err_t joint_manager_event_joint_data_handler(
     }
 
     ATLAS_LOG(TAG,
-              "goal position: %d * 100",
+              "goal position: %d [deg * 100]",
               (int32_t)joint_data->position * 100);
 
     manager->goal_position = joint_data->position;
@@ -520,13 +521,13 @@ atlas_err_t joint_manager_process(joint_manager_t* manager)
 
     joint_notify_t notify;
     if (joint_manager_receive_joint_notify(&notify)) {
-        ATLAS_RET_ON_ERR(joint_manager_notify_handler(manager, notify));
+        ATLAS_LOG_ON_ERR(TAG, joint_manager_notify_handler(manager, notify));
     }
 
     joint_event_t event;
     while (joint_manager_has_joint_event()) {
         if (joint_manager_receive_joint_event(&event)) {
-            ATLAS_RET_ON_ERR(joint_manager_event_handler(manager, &event));
+            ATLAS_LOG_ON_ERR(TAG, joint_manager_event_handler(manager, &event));
         }
     }
 

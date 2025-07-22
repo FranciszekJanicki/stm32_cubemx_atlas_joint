@@ -248,7 +248,7 @@ static atlas_err_t system_manager_event_joint_start_handler(
     manager->is_joint_running = true;
 
     system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
-    atlas_timestamp_print(&manager->current_timestamp);
+    atlas_timestamp_print(&manager->start_timestamp);
 
     // test
     HAL_TIM_Base_Start_IT(manager->config.delta_timer);
@@ -380,13 +380,14 @@ atlas_err_t system_manager_process(system_manager_t* manager)
 
     system_notify_t notify;
     if (system_manager_receive_system_notify(&notify)) {
-        ATLAS_RET_ON_ERR(system_manager_notify_handler(manager, notify));
+        ATLAS_LOG_ON_ERR(TAG, system_manager_notify_handler(manager, notify));
     }
 
     system_event_t event;
     while (system_manager_has_system_event()) {
         if (system_manager_receive_system_event(&event)) {
-            ATLAS_RET_ON_ERR(system_manager_event_handler(manager, &event));
+            ATLAS_LOG_ON_ERR(TAG,
+                             system_manager_event_handler(manager, &event));
         }
     }
 
