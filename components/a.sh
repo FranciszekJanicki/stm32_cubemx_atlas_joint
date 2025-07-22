@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 dirs=$(find -maxdepth 1)
-for dir in $dirs; do
+for dir in *; do
     cd $dir
     git add .
     git commit -m"changes"
