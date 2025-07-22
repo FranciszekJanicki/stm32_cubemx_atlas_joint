@@ -12,6 +12,7 @@ target_link_libraries(common PUBLIC
     atlas_core
     utility
     stm32cubemx
+    bus_task
 )
 
 target_compile_options(common PUBLIC

@@ -1,6 +1,8 @@
 #ifndef COMMON_NOTIFY_H
 #define COMMON_NOTIFY_H
 
+#include "bus_task.h"
+
 typedef enum {
     SYSTEM_NOTIFY_RETRY_TIMER = (1 << 0),
     SYSTEM_NOTIFY_JOINT_READY = (1 << 1),
@@ -23,9 +25,9 @@ typedef enum {
 } packet_notify_t;
 
 typedef enum {
-    UART_NOTIFY_START = (1 << 0),
-    UART_NOTIFY_STOP = (1 << 1),
-    UART_NOTIFY_TRANSMIT_DONE = (1 << 2),
+    UART_NOTIFY_START = BUS_ACTION_TRANSMIT,
+    UART_NOTIFY_STOP = BUS_NOTIFY_STOP,
+    UART_NOTIFY_TRANSMIT_DONE = BUS_NOTIFY_TRANSMIT_DONE,
     UART_NOTIFY_ALL =
         (UART_NOTIFY_START | UART_NOTIFY_STOP | UART_NOTIFY_TRANSMIT_DONE),
 } uart_notify_t;

@@ -46,8 +46,7 @@ atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
     static StackType_t uart_task_stack[UART_TASK_STACK_DEPTH];
     static uint8_t uart_buffer[UART_BUFFER_STORAGE_SIZE];
 
-    static bus_task_ctx_t bus_ctx = {};
-    bus_ctx.action = BUS_ACTION_TRANSMIT,
+    static bus_task_ctx_t bus_ctx;
     bus_ctx.config = (bus_config_t){.bus_buffer = uart_buffer,
                                     .bus_buffer_size = UART_BUFFER_STORAGE_SIZE,
                                     .stream_buffer = uart_stream_buffer};
