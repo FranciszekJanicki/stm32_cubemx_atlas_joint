@@ -43,6 +43,12 @@ static inline bool system_manager_receive_system_event(system_event_t* event)
                          pdMS_TO_TICKS(1)) == pdPASS;
 }
 
+static inline bool system_manager_send_uart_notify(uart_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_UART), notify, eSetBits) ==
+           pdPASS;
+}
+
 static inline bool system_manager_receive_system_notify(system_notify_t* notify)
 {
     ATLAS_ASSERT(notify);
@@ -360,6 +366,10 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     manager->is_running = true;
     manager->is_packet_running = false;
     manager->config = *config;
+
+    if (!system_manager_send_uart_notify(UART_NOTIFY_START)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }

@@ -15,8 +15,8 @@ __attribute__((used)) int _write(int file, char* ptr, int len)
 
     size_t written = 0U;
     if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(100))) {
-        // written = xStreamBufferSend(uart_stream_buffer, ptr, len, 0);
-        HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
+        written = xStreamBufferSend(uart_stream_buffer, ptr, len, 0);
+        // HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
         xSemaphoreGive(uart_mutex);
     }
 

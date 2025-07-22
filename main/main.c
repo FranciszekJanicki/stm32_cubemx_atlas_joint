@@ -8,9 +8,9 @@
 #include "usart.h"
 
 static atlas_joint_config_t config = {
+    .uart_ctx = {.uart_bus = &huart2},
     .system_ctx = {.config = {.num = ATLAS_JOINT_NUM_1,
                               .timestamp_rtc = &hrtc}},
-    .uart_ctx = {.uart = &huart2},
     .packet_ctx = {.config = {.robot_packet_ready_gpio = GPIOA,
                               .robot_packet_ready_pin = GPIO_PIN_0,
                               .packet_spi = &hspi1}},

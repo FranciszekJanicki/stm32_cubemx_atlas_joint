@@ -22,4 +22,12 @@ typedef enum {
     PACKET_NOTIFY_ALL = (PACKET_NOTIFY_JOINT_PACKET_READY),
 } packet_notify_t;
 
+typedef enum {
+    UART_NOTIFY_START = (1 << 0),
+    UART_NOTIFY_STOP = (1 << 1),
+    UART_NOTIFY_TRANSMIT_DONE = (1 << 2),
+    UART_NOTIFY_ALL =
+        (UART_NOTIFY_START | UART_NOTIFY_STOP | UART_NOTIFY_TRANSMIT_DONE),
+} uart_notify_t;
+
 #endif // COMMON_NOTIFY_H

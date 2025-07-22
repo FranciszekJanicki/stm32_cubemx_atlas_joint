@@ -1,29 +1,19 @@
-add_subdirectory(common)
-add_subdirectory(system_task)
-add_subdirectory(joint_task)
-add_subdirectory(packet_task)
-add_subdirectory(uart_task)
+add_library(uart_task STATIC)
 
-add_library(atlas_joint STATIC)
-
-target_sources(atlas_joint PRIVATE 
-    atlas_joint.c
+target_sources(uart_task PRIVATE 
+    uart_task.c
 )  
 
-target_include_directories(atlas_joint PUBLIC
+target_include_directories(uart_task PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(atlas_joint PUBLIC 
+target_link_libraries(uart_task PUBLIC 
+    bus_task
     common
-    system_task
-    joint_task
-    uart_task
-    packet_task
-    stm32cubemx
 )
 
-target_compile_options(atlas_joint PUBLIC
+target_compile_options(uart_task PUBLIC
     -std=c23
     -Wall
     -Wextra

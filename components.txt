@@ -5,7 +5,7 @@ git@github.com:FranciszekJanicki/step_motor.git step_motor
 git@github.com:FranciszekJanicki/pid_regulator.git pid_regulator
 git@github.com:FranciszekJanicki/motor_driver.git motor_driver
 git@github.com:FranciszekJanicki/atlas_core.git atlas_core
-git@github.com:FranciszekJanicki/uart_task.git uart_task
+git@github.com:FranciszekJanicki/bus_task.git bus_task
 git@github.com:FranciszekJanicki/utility.git utility
 
 

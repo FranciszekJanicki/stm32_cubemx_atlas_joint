@@ -19,9 +19,9 @@
 [submodule "components/atlas_core"]
 	path = components/atlas_core
 	url = git@github.com:FranciszekJanicki/atlas_core.git
-[submodule "components/uart_task"]
-	path = components/uart_task
-	url = git@github.com:FranciszekJanicki/uart_task.git
+[submodule "components/bus_task"]
+	path = components/bus_task
+	url = git@github.com:FranciszekJanicki/bus_task.git
 [submodule "components/utility"]
 	path = components/utility
 	url = git@github.com:FranciszekJanicki/utility.git
