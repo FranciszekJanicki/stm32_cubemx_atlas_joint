@@ -1,13 +1,17 @@
 include make/common.mk
 
+BUILD_DIR := $(PROJECT_DIR)/build
+
 .PHONY: build
 build: 
-	cd $(BUILD_DIR) && $(MAKE)
+	$(MAKE) -C "$(BUILD_DIR)"
 
 .PHONY: clean
 clean: 
-	rm -rf $(BUILD_DIR)
+	rm -rf "$(BUILD_DIR)"
 
 .PHONY: setup_cmake
 setup_cmake:
-	$(MAKE) clean && mkdir -p $(BUILD_DIR) && cmake -S . -B $(BUILD_DIR)
+	$(MAKE) clean
+	mkdir -p "$(BUILD_DIR)"
+	cmake -S . -B "$(BUILD_DIR)"

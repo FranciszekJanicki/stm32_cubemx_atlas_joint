@@ -1,0 +1,4 @@
+git@github.com:FranciszekJanicki/atlas_core.git atlas_core
+git@github.com:FranciszekJanicki/sh1107.git sh1107
+git@github.com:FranciszekJanicki/bus_task.git bus_task
+git@github.com:FranciszekJanicki/utility.git utility

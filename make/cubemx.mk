@@ -1,9 +1,13 @@
 include make/common.mk
 
+CUBEMX_DIR := $(PROJECT_DIR)/cubemx
+CUBEMX_BINARY := stm32cubemx
+CUBEPROG_BINARY := /opt/stm32cubeprog/bin/STM32CubeProgrammer
+
 .PHONY: cubemx
 cubemx: 
-	stm32cubemx
+	$(CUBEMX_BINARY)
 
 .PHONY: cubeprog
 cubeprog:
-	/opt/stm32cubeprog/bin/STM32CubeProgrammer
+	$(CUBEPROG_BINARY)

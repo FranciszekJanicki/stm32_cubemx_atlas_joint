@@ -610,4 +610,3 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     return ATLAS_ERR_OK;
 }
-
