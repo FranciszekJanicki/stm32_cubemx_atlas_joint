@@ -11,9 +11,10 @@
 typedef struct {
     atlas_joint_num_t num;
     RTC_HandleTypeDef* timestamp_rtc;
-
-    TIM_HandleTypeDef* delta_timer;        // test
-    TIM_HandleTypeDef* packet_ready_timer; // test
+#ifdef PACKET_TEST
+    TIM_HandleTypeDef* delta_timer;       
+    TIM_HandleTypeDef* packet_ready_timer;
+    #endif
 } system_config_t;
 
 typedef struct {
@@ -24,8 +25,8 @@ typedef struct {
     atlas_timestamp_t current_timestamp;
     atlas_timestamp_t start_timestamp;
 
-    float32_t referenced_position;
-    float32_t measured_position;
+    atlas_joint_measure_t joint_measure;
+    atlas_joint_reference_t joint_reference;
 
     system_config_t config;
 } system_manager_t;

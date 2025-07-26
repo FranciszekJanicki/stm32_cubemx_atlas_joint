@@ -6,6 +6,6 @@
 #include "manager.h"
 #include "notify.h"
 
-#define JOINT_DELTA_TIMER_PERIOD_S (1.0F)
+#define PACKET_TEST
 
 #endif // COMMON_COMMON_H

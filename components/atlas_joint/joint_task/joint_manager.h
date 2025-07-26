@@ -33,9 +33,10 @@ typedef struct {
 } joint_config_t;
 
 typedef struct {
-    float32_t goal_position;
-    float32_t delta_time;
     bool is_running;
+
+    atlas_joint_measure_t measure;
+    atlas_joint_reference_t reference;
 
     as5600_t as5600;
     drv8825_t drv8825;

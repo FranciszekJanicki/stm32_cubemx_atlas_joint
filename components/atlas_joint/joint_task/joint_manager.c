@@ -380,12 +380,16 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    float32_t measured_position = 0.0F;
-    motor_driver_err_t err = MOTOR_DRIVER_ERR_OK;
-    // motor_driver_set_position(&manager->driver,
-    //                           manager->goal_position,
-    //                           manager->delta_time,
-    //                           &measured_position);
+    if (manager->reference.delta_time == 0.0F) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    motor_driver_err_t err =
+        motor_driver_set_position(&manager->driver,
+                                  manager->reference.position,
+                                  manager->reference.delta_time,
+                                  &manager->measure.position,
+                                  &manager->measure.current);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
         if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
@@ -393,8 +397,8 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         }
     } else {
         system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
-        event.type = SYSTEM_EVENT_TYPE_JOINT_DATA;
-        event.payload.joint_data.position = measured_position;
+        event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
+        event.payload.joint_measure = manager->measure;
 
         if (!joint_manager_send_system_event(&event)) {
             return ATLAS_ERR_FAIL;
@@ -470,22 +474,20 @@ static atlas_err_t joint_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t joint_manager_event_joint_data_handler(
+static atlas_err_t joint_manager_event_reference_handler(
     joint_manager_t* manager,
-    joint_event_payload_joint_data_t const* joint_data)
+    joint_event_payload_reference_t const* reference)
 {
-    ATLAS_ASSERT(manager && joint_data);
+    ATLAS_ASSERT(manager && reference);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    ATLAS_LOG(TAG,
-              "goal position: %d [deg * 100]",
-              (int32_t)joint_data->position * 100);
+    atlas_joint_reference_print(reference);
 
-    manager->goal_position = joint_data->position;
+    manager->reference = *reference;
 
     return ATLAS_ERR_OK;
 }
@@ -504,10 +506,10 @@ static atlas_err_t joint_manager_event_handler(joint_manager_t* manager,
             return joint_manager_event_stop_handler(manager,
                                                     &event->payload.stop);
         }
-        case JOINT_EVENT_TYPE_JOINT_DATA: {
-            return joint_manager_event_joint_data_handler(
+        case JOINT_EVENT_TYPE_REFERENCE: {
+            return joint_manager_event_reference_handler(
                 manager,
-                &event->payload.joint_data);
+                &event->payload.reference);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_EVENT;
@@ -542,7 +544,10 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     manager->config = *config;
     manager->is_running = false;
-    manager->delta_time = JOINT_DELTA_TIMER_PERIOD_S;
+    manager->measure.current = 0.0F;
+    manager->measure.position = 0.0F;
+    manager->reference.position = 0.0F;
+    manager->reference.delta_time = 0.0F;
 
     as5600_initialize(
         &manager->as5600,

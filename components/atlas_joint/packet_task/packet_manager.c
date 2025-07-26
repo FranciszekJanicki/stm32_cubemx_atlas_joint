@@ -96,7 +96,10 @@ static inline bool packet_manager_send_robot_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    uint8_t buffer[ROBOT_PACKET_SIZE];
+    uint8_t buffer[ATLAS_ROBOT_PACKET_SIZE];
+
+    atlas_checksum_t checksum;
+    atlas_checksum_encode(&checksum, (uint8_t (*)[ATLAS_CHECKSUM_SIZE])buffer);
 
     atlas_robot_packet_encode(packet, &buffer);
 
@@ -117,13 +120,22 @@ static inline bool packet_manager_receive_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    uint8_t buffer[JOINT_PACKET_SIZE];
+    uint8_t buffer[ATLAS_JOINT_PACKET_SIZE];
     bool result =
         packet_manager_packet_spi_receive_data(manager, buffer, sizeof(buffer));
 
+    if (!result) {
+        return false;
+    }
+
     atlas_joint_packet_decode(&buffer, packet);
 
-    return result;
+    atlas_checksum_t checksum;
+    atlas_checksum_calculate(buffer,
+                             sizeof(buffer) - sizeof(atlas_checksum_t),
+                             &checksum);
+
+    return checksum == packet->checksum;
 }
 
 static atlas_err_t packet_manager_packet_joint_start_handler(
@@ -139,7 +151,7 @@ static atlas_err_t packet_manager_packet_joint_start_handler(
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
-    event.payload.joint_start = (system_event_payload_joint_start_t){};
+    event.payload.joint_start = *joint_start;
 
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -161,7 +173,7 @@ static atlas_err_t packet_manager_packet_joint_stop_handler(
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_STOP};
-    event.payload.joint_stop = (system_event_payload_joint_stop_t){};
+    event.payload.joint_stop = *joint_stop;
 
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -170,11 +182,11 @@ static atlas_err_t packet_manager_packet_joint_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t packet_manager_packet_joint_data_handler(
+static atlas_err_t packet_manager_packet_joint_reference_handler(
     packet_manager_t* manager,
-    atlas_joint_packet_payload_joint_data_t const* joint_data)
+    atlas_joint_packet_payload_joint_reference_t const* joint_reference)
 {
-    ATLAS_ASSERT(manager && joint_data);
+    ATLAS_ASSERT(manager && joint_reference);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
@@ -182,8 +194,8 @@ static atlas_err_t packet_manager_packet_joint_data_handler(
     }
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
-                            .type = SYSTEM_EVENT_TYPE_JOINT_DATA};
-    event.payload.joint_data.position = joint_data->position;
+                            .type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE};
+    event.payload.joint_reference = *joint_reference;
 
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -210,10 +222,10 @@ static atlas_err_t packet_manager_joint_packet_handler(
                 manager,
                 &packet->payload.joint_stop);
         }
-        case ATLAS_JOINT_PACKET_TYPE_JOINT_DATA: {
-            return packet_manager_packet_joint_data_handler(
+        case ATLAS_JOINT_PACKET_TYPE_JOINT_REFERENCE: {
+            return packet_manager_packet_joint_reference_handler(
                 manager,
-                &packet->payload.joint_data);
+                &packet->payload.joint_reference);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_PACKET;
@@ -231,22 +243,22 @@ static atlas_err_t packet_manager_notify_joint_packet_ready_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    // atlas_joint_packet_t packet;
-    // if (packet_manager_receive_joint_packet(manager, &packet)) {
-    //     ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager,
-    //     &packet));
-    // }
-
-    // test
-    system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_DATA,
+#ifdef PACKET_TEST
+    system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
                             .origin = SYSTEM_EVENT_ORIGIN_PACKET};
     static float32_t position = 0.0F, step = 1.0F;
     if (position > 359.0F || position < 1.0F) {
         step *= -1.0F;
     }
-    event.payload.joint_data.position = position;
+    event.payload.joint_reference.position = position;
     packet_manager_send_system_event(&event);
     position += step;
+#else
+    atlas_joint_packet_t packet;
+    if (packet_manager_receive_joint_packet(manager, &packet)) {
+        ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager, &packet));
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }
@@ -296,30 +308,32 @@ static atlas_err_t packet_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t packet_manager_event_joint_data_handler(
+static atlas_err_t packet_manager_event_joint_measure_handler(
     packet_manager_t* manager,
-    packet_event_payload_joint_data_t const* joint_data)
+    packet_event_payload_joint_measure_t const* joint_measure)
 {
-    ATLAS_ASSERT(manager && joint_data);
+    ATLAS_ASSERT(manager && joint_measure);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    atlas_robot_packet_t packet = {.type = ATLAS_ROBOT_PACKET_TYPE_JOINT_DATA};
-    packet.origin = joint_data->num;
-    packet.timestamp = joint_data->timestamp;
-    packet.payload.joint_data = joint_data->data;
+    atlas_robot_packet_t packet = {.type =
+                                       ATLAS_ROBOT_PACKET_TYPE_JOINT_MEASURE};
+    packet.origin = joint_measure->num;
+    packet.timestamp = joint_measure->timestamp;
+    packet.payload.joint_measure = joint_measure->measure;
 
-    // if (!packet_manager_send_robot_packet(manager, &packet)) {
-    //     return ATLAS_ERR_FAIL;
-    // }
-
-    // test
+#ifndef PACKET_TEST
     ATLAS_LOG(TAG,
               "position measured: %d [deg * 100]",
-              (int32_t)packet.payload.joint_data.position * 100);
+              (int32_t)packet.payload.joint_measure.position * 100);
+#else
+    if (!packet_manager_send_robot_packet(manager, &packet)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }
@@ -363,14 +377,15 @@ static atlas_err_t packet_manager_event_joint_ready_handler(
     packet.timestamp = joint_ready->timestamp;
     packet.payload.joint_ready = joint_ready->ready;
 
-    // if (!packet_manager_send_robot_packet(manager, &packet)) {
-    //     return ATLAS_ERR_FAIL;
-    // }
-
-    // test
+#ifdef PACKET_TEST
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
     packet_manager_send_system_event(&event);
+#else
+    if (!packet_manager_send_robot_packet(manager, &packet)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }
@@ -389,10 +404,10 @@ static atlas_err_t packet_manager_event_handler(packet_manager_t* manager,
             return packet_manager_event_stop_handler(manager,
                                                      &event->payload.stop);
         }
-        case PACKET_EVENT_TYPE_JOINT_DATA: {
-            return packet_manager_event_joint_data_handler(
+        case PACKET_EVENT_TYPE_JOINT_MEASURE: {
+            return packet_manager_event_joint_measure_handler(
                 manager,
-                &event->payload.joint_data);
+                &event->payload.joint_measure);
         }
         case PACKET_EVENT_TYPE_JOINT_FAULT: {
             return packet_manager_event_joint_fault_handler(

@@ -11,11 +11,12 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     if (htim->Instance == TIM4) {
         HAL_IncTick();
     } else if (htim->Instance == TIM2) {
-        // test only
+        #ifdef PACKET_TEST
         joint_task_delta_timer_callback();
-    } else if (htim->Instance == TIM3) {
-        // test only
+    #endif} else if (htim->Instance == TIM3) {
+#ifdef PACKET_TEST
         packet_task_joint_packet_ready_callback();
+#endif
     }
 }
 

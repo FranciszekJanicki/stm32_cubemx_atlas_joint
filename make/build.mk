@@ -1,7 +1,5 @@
 include make/common.mk
 
-BUILD_DIR := $(PROJECT_DIR)/build
-
 .PHONY: build
 build: 
 	$(MAKE) -C "$(BUILD_DIR)"
