@@ -1,0 +1,30 @@
+[submodule "submodules/drv8825"]
+	path = submodules/drv8825
+	url = git@github.com:FranciszekJanicki/drv8825.git
+[submodule "submodules/as5600"]
+	path = submodules/as5600
+	url = git@github.com:FranciszekJanicki/as5600.git
+[submodule "submodules/ina226"]
+	path = submodules/ina226
+	url = git@github.com:FranciszekJanicki/ina226.git
+[submodule "submodules/step_motor"]
+	path = submodules/step_motor
+	url = git@github.com:FranciszekJanicki/step_motor.git
+[submodule "submodules/pid_regulator"]
+	path = submodules/pid_regulator
+	url = git@github.com:FranciszekJanicki/pid_regulator.git
+[submodule "submodules/motor_driver"]
+	path = submodules/motor_driver
+	url = git@github.com:FranciszekJanicki/motor_driver.git
+[submodule "submodules/atlas_core"]
+	path = submodules/atlas_core
+	url = git@github.com:FranciszekJanicki/atlas_core.git
+[submodule "submodules/bus_task"]
+	path = submodules/bus_task
+	url = git@github.com:FranciszekJanicki/bus_task.git
+[submodule "submodules/utility"]
+	path = submodules/utility
+	url = git@github.com:FranciszekJanicki/utility.git
+[submodule "submodules/handle_manager"]
+	path = submodules/handle_manager
+	url = git@github.com:FranciszekJanicki/handle_manager.git
