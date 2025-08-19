@@ -2,9 +2,9 @@
 #define JOINT_TASK_JOINT_MANAGER_H
 
 #include "FreeRTOS.h"
+#include "a4988.h"
 #include "as5600.h"
 #include "common.h"
-#include "drv8825.h"
 #include "ina226.h"
 #include "motor_driver.h"
 #include "pid_regulator.h"
@@ -18,10 +18,10 @@
 #include <stdint.h>
 
 typedef struct {
-    GPIO_TypeDef* drv8825_gpio;
-    uint32_t drv8825_dir_pin;
-    TIM_HandleTypeDef* drv8825_pwm_timer;
-    uint32_t drv8825_pwm_channel;
+    GPIO_TypeDef* a4988_gpio;
+    uint32_t a4988_dir_pin;
+    TIM_HandleTypeDef* a4988_pwm_timer;
+    uint32_t a4988_pwm_channel;
 
     I2C_HandleTypeDef* ina226_i2c_bus;
     uint16_t ina226_i2c_address;
@@ -39,7 +39,7 @@ typedef struct {
     atlas_joint_reference_t reference;
 
     as5600_t as5600;
-    drv8825_t drv8825;
+    a4988_t a4988;
     ina226_t ina226;
     step_motor_t motor;
     pid_regulator_t regulator;
@@ -49,8 +49,15 @@ typedef struct {
 } joint_manager_t;
 
 typedef struct {
-    float32_t prop_gain, int_gain, dot_gain, sat_gain;
-    float32_t min_speed, max_speed, min_position, max_position;
+    float32_t prop_gain;
+    float32_t int_gain;
+    float32_t dot_gain;
+    float32_t sat_gain;
+    float32_t dead_error;
+    float32_t min_speed;
+    float32_t max_speed;
+    float32_t min_position;
+    float32_t max_position;
     float32_t step_change;
     float32_t current_limit;
 } joint_parameters_t;

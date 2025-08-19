@@ -10,21 +10,19 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
 {
     if (htim->Instance == TIM4) {
         HAL_IncTick();
-    } else if (htim->Instance == TIM2) {
-#ifdef PACKET_TEST
+    } else if (htim->Instance == TIM1) {
         joint_task_delta_timer_callback();
 #ifdef PACKET_TEST
-#endif } else if (htim->Instance == TIM3) {
-
+    } else if (htim->Instance == TIM3) {
         packet_task_joint_packet_ready_callback();
-#endif
     }
+#endif
 }
 
 __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(
     TIM_HandleTypeDef* htim)
 {
-    if (htim->Instance == TIM1) {
+    if (htim->Instance == TIM2) {
         joint_task_pwm_pulse_callback();
     }
 }

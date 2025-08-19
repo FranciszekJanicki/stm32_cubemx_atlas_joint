@@ -253,7 +253,7 @@ static atlas_err_t system_manager_event_joint_start_handler(
 
 #ifdef PACKET_TEST
     HAL_TIM_Base_Start_IT(manager->config.delta_timer);
-#endif 
+#endif
 
     return ATLAS_ERR_OK;
 }

@@ -6,6 +6,7 @@ include make/monitor.mk
 include make/cubemx.mk
 include make/submodules.mk
 include make/scripts.mk
+include tools/tools.mk
 
 .DEFAULT_GOAL := build
 

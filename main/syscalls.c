@@ -1,7 +1,7 @@
 #include "FreeRTOS.h"
+#include "manager.h"
 #include "semphr.h"
 #include "stream_buffer.h"
-#include "manager.h"
 #include "usart.h"
 #include <errno.h>
 #include <signal.h>

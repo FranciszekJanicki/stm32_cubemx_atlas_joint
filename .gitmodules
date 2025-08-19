@@ -1,6 +1,7 @@
-[submodule "submodules/drv8825"]
-	path = submodules/drv8825
-	url = git@github.com:FranciszekJanicki/drv8825.git
+a4988a4988a4988
+[submodule "submodules/a4988"]
+	path = submodules/a4988
+	url = git@github.com:FranciszekJanicki/a4988.git
 [submodule "submodules/as5600"]
 	path = submodules/as5600
 	url = git@github.com:FranciszekJanicki/as5600.git

@@ -1,7 +1,7 @@
 #include "joint_manager.h"
 #include "FreeRTOS.h"
+#include "a4988.h"
 #include "common.h"
-#include "drv8825.h"
 #include "event.h"
 #include "manager.h"
 #include "motor_driver.h"
@@ -14,29 +14,27 @@
 #include <stdint.h>
 #include <string.h>
 
-static bool frequency_to_prescaler_and_period(uint32_t frequency,
+static bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
                                               uint32_t clock_hz,
-                                              uint32_t clock_div,
                                               uint32_t max_prescaler,
                                               uint32_t max_period,
                                               uint32_t* prescaler,
                                               uint32_t* period)
 {
-    if (frequency == 0U || !prescaler || !period) {
+    if (frequency_hz == 0U || !prescaler || !period) {
         return false;
     }
 
-    uint32_t base_clock = clock_hz / (clock_div + 1U);
     uint32_t temp_prescaler = 0U;
-    uint32_t temp_period = base_clock / frequency;
+    uint32_t temp_period = clock_hz / frequency_hz;
 
     while (temp_period > max_period && temp_prescaler < max_prescaler) {
         temp_prescaler++;
-        temp_period = base_clock / ((temp_prescaler + 1U) * frequency);
+        temp_period = clock_hz / ((temp_prescaler + 1U) * frequency_hz);
     }
     if (temp_period > max_period) {
         temp_period = max_period;
-        temp_prescaler = (base_clock / (temp_period * frequency)) - 1U;
+        temp_prescaler = (clock_hz / (temp_period * frequency_hz)) - 1U;
     }
     if (temp_prescaler > max_prescaler) {
         temp_prescaler = max_prescaler;
@@ -48,76 +46,90 @@ static bool frequency_to_prescaler_and_period(uint32_t frequency,
     return true;
 }
 
-static drv8825_err_t drv8825_gpio_write_pin(void* user,
-                                            uint32_t pin,
-                                            bool state)
+static a4988_err_t a4988_gpio_write_pin(void* user, uint32_t pin, bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->drv8825_gpio == NULL) {
-        return DRV8825_ERR_FAIL;
+    if (config->a4988_gpio == NULL) {
+        return A4988_ERR_FAIL;
     }
 
-    HAL_GPIO_WritePin(config->drv8825_gpio, pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(config->a4988_gpio, pin, (GPIO_PinState)state);
 
-    return DRV8825_ERR_OK;
+    return A4988_ERR_OK;
 }
 
-static drv8825_err_t drv8825_pwm_start(void* user)
+static a4988_err_t a4988_pwm_start(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->drv8825_pwm_timer == NULL) {
-        return DRV8825_ERR_FAIL;
+    if (config->a4988_pwm_timer == NULL) {
+        return A4988_ERR_FAIL;
     }
 
-    HAL_StatusTypeDef err = HAL_TIM_PWM_Start_IT(config->drv8825_pwm_timer,
-                                                 config->drv8825_pwm_channel);
+    HAL_StatusTypeDef err = HAL_TIM_PWM_Start_IT(config->a4988_pwm_timer,
+                                                 config->a4988_pwm_channel);
 
-    return err == HAL_OK ? DRV8825_ERR_OK : DRV8825_ERR_FAIL;
+    return err == HAL_OK ? A4988_ERR_OK : A4988_ERR_FAIL;
 }
 
-static drv8825_err_t drv8825_pwm_stop(void* user)
+static a4988_err_t a4988_pwm_stop(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->drv8825_pwm_timer == NULL) {
-        return DRV8825_ERR_FAIL;
+    if (config->a4988_pwm_timer == NULL) {
+        return A4988_ERR_FAIL;
     }
 
-    HAL_StatusTypeDef err = HAL_TIM_PWM_Stop_IT(config->drv8825_pwm_timer,
-                                                config->drv8825_pwm_channel);
+    HAL_StatusTypeDef err =
+        HAL_TIM_PWM_Stop_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
 
-    return err == HAL_OK ? DRV8825_ERR_OK : DRV8825_ERR_FAIL;
+    return err == HAL_OK ? A4988_ERR_OK : A4988_ERR_FAIL;
 }
 
-static drv8825_err_t drv8825_pwm_set_frequency(void* user, uint32_t frequency)
+static a4988_err_t a4988_pwm_set_frequency(void* user, uint32_t frequency)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->drv8825_pwm_timer == NULL) {
-        return DRV8825_ERR_FAIL;
+    if (config->a4988_pwm_timer == NULL) {
+        return A4988_ERR_FAIL;
+    }
+
+    uint32_t clock_hz = HAL_RCC_GetPCLK1Freq();
+    if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
+        clock_hz *= 2;
     }
 
     uint32_t prescaler;
     uint32_t period;
-    if (frequency_to_prescaler_and_period(frequency,
-                                          80000000U,
-                                          0x0U,
-                                          0xFFFFU,
-                                          0xFFFFU,
-                                          &prescaler,
-                                          &period)) {
-        __HAL_TIM_DISABLE(config->drv8825_pwm_timer);
-        __HAL_TIM_SET_PRESCALER(config->drv8825_pwm_timer, prescaler);
-        __HAL_TIM_SET_AUTORELOAD(config->drv8825_pwm_timer, period);
-        __HAL_TIM_SET_COMPARE(config->drv8825_pwm_timer,
-                              config->drv8825_pwm_channel,
-                              period / 2U);
-        __HAL_TIM_ENABLE(config->drv8825_pwm_timer);
+    bool result = frequency_to_prescaler_and_period(frequency,
+                                                    clock_hz,
+                                                    0xFFFFU,
+                                                    0xFFFFU,
+                                                    &prescaler,
+                                                    &period);
+
+    if (result && period < 0xFFFFU && prescaler < 0xFFFFU) {
+        uint32_t tick_hz = clock_hz / (prescaler + 1);
+        uint32_t compare = (tick_hz / 1000000) * 5; // 5 us pulse
+        if (compare == 0) {
+            compare = 1;
+        }
+        if (compare > period) {
+            compare = period;
+        }
+
+        __HAL_TIM_DISABLE(config->a4988_pwm_timer);
+        __HAL_TIM_SET_COUNTER(config->a4988_pwm_timer, 0U);
+        __HAL_TIM_SET_PRESCALER(config->a4988_pwm_timer, prescaler);
+        __HAL_TIM_SET_AUTORELOAD(config->a4988_pwm_timer, period);
+        __HAL_TIM_SET_COMPARE(config->a4988_pwm_timer,
+                              config->a4988_pwm_channel,
+                              compare);
+        __HAL_TIM_ENABLE(config->a4988_pwm_timer);
     }
 
-    return DRV8825_ERR_OK;
+    return A4988_ERR_OK;
 }
 
 static as5600_err_t as5600_gpio_write_pin(void* user, uint32_t pin, bool state)
@@ -147,16 +159,16 @@ static as5600_err_t as5600_bus_write_data(void* user,
     SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
     HAL_StatusTypeDef err;
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        err = HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                                config->as5600_i2c_address << 1,
-                                address,
-                                I2C_MEMADD_SIZE_8BIT,
-                                data,
-                                data_size,
-                                10);
-        xSemaphoreGive(joint_mutex);
-    }
+    //  if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    err = HAL_I2C_Mem_Write(config->as5600_i2c_bus,
+                            config->as5600_i2c_address << 1,
+                            address,
+                            I2C_MEMADD_SIZE_8BIT,
+                            data,
+                            data_size,
+                            10);
+    //    xSemaphoreGive(joint_mutex);
+    // }
 
     return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
 }
@@ -175,18 +187,61 @@ static as5600_err_t as5600_bus_read_data(void* user,
     SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
     HAL_StatusTypeDef err;
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        err = HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                               config->as5600_i2c_address << 1,
-                               address,
-                               I2C_MEMADD_SIZE_8BIT,
-                               data,
-                               data_size,
-                               10);
-        xSemaphoreGive(joint_mutex);
-    }
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    err = HAL_I2C_Mem_Read(config->as5600_i2c_bus,
+                           config->as5600_i2c_address << 1,
+                           address,
+                           I2C_MEMADD_SIZE_8BIT,
+                           data,
+                           data_size,
+                           10);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
     return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
+}
+
+static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
+                                           float32_t min_angle,
+                                           float32_t max_angle)
+{
+    as5600_status_reg_t status;
+    as5600_err_t err = as5600_get_status_reg(as5600, &status);
+    if (err != AS5600_ERR_OK)
+        return err;
+
+    float32_t angle_range = (max_angle - min_angle);
+
+    uint16_t min_raw = (uint16_t)(min_angle / angle_range * 4095.0F);
+    uint16_t max_raw = (uint16_t)(max_angle / angle_range * 4095.0F);
+
+    as5600_zpos_reg_t zpos = {.zpos = min_raw & 0x0FFF};
+    err = as5600_set_zpos_reg(as5600, &zpos);
+    if (err != AS5600_ERR_OK)
+        return err;
+
+    as5600_mpos_reg_t mpos = {.mpos = max_raw & 0x0FFF};
+    err = as5600_set_mpos_reg(as5600, &mpos);
+    if (err != AS5600_ERR_OK)
+        return err;
+
+    as5600_conf_reg_t conf = {.wd = AS5600_WATCHDOG_OFF,
+                              .fth = AS5600_SLOW_FILTER_X16,
+                              .sf = AS5600_SLOW_FILTER_X16,
+                              .pwmf = AS5600_PWM_FREQUENCY_115HZ,
+                              .outs = AS5600_FAST_FILTER_THRESH_SLOW,
+                              .hyst = AS5600_HYSTERESIS_OFF,
+                              .pm = AS5600_POWER_MODE_NOM};
+    err = as5600_set_conf_reg(as5600, &conf);
+    if (err != AS5600_ERR_OK)
+        return err;
+
+    as5600_zmco_reg_t zmco;
+    err = as5600_get_zmco_reg(as5600, &zmco);
+    if (err != AS5600_ERR_OK)
+        return err;
+
+    return AS5600_ERR_OK;
 }
 
 static ina226_err_t ina226_bus_write_data(void* user,
@@ -249,6 +304,13 @@ static ina226_err_t ina226_bus_read_data(void* user,
     return err == HAL_OK ? INA226_ERR_OK : INA226_ERR_FAIL;
 }
 
+static ina226_err_t ina226_initialize_chip(ina226_t* ina226,
+                                           float32_t min_current,
+                                           float32_t max_current)
+{
+    return INA226_ERR_OK;
+}
+
 static step_motor_err_t step_motor_device_set_frequency(void* user,
                                                         uint32_t frequency)
 {
@@ -256,9 +318,9 @@ static step_motor_err_t step_motor_device_set_frequency(void* user,
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    drv8825_err_t err = drv8825_set_frequency(&manager->drv8825, frequency);
+    a4988_err_t err = a4988_set_frequency(&manager->a4988, frequency);
 
-    return err == DRV8825_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
+    return err == A4988_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
 }
 
 static step_motor_err_t step_motor_device_set_direction(
@@ -269,10 +331,10 @@ static step_motor_err_t step_motor_device_set_direction(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    drv8825_err_t err = drv8825_set_direction(&manager->drv8825,
-                                              (drv8825_direction_t)direction);
+    a4988_err_t err =
+        a4988_set_direction(&manager->a4988, (a4988_direction_t)direction);
 
-    return err == DRV8825_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
+    return err == A4988_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
 }
 
 static motor_driver_err_t motor_driver_motor_set_speed(void* user,
@@ -313,10 +375,13 @@ static motor_driver_err_t motor_driver_regulator_get_control(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    *control =
-        pid_regulator_get_sat_control(&manager->regulator, error, delta_time);
+    pid_regulator_err_t err = pid_regulator_get_sat_control(&manager->regulator,
+                                                            error,
+                                                            delta_time,
+                                                            control);
 
-    return MOTOR_DRIVER_ERR_OK;
+    return err == PID_REGULATOR_ERR_OK ? MOTOR_DRIVER_ERR_OK
+                                       : MOTOR_DRIVER_ERR_FAIL;
 }
 
 static motor_driver_err_t motor_driver_fault_get_current(void* user,
@@ -562,15 +627,19 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
                               .bus_read_data = as5600_bus_read_data,
                               .bus_write_data = as5600_bus_write_data});
 
-    drv8825_initialize(
-        &manager->drv8825,
-        &(drv8825_config_t){.pin_dir = config->drv8825_dir_pin},
-        &(drv8825_interface_t){.gpio_user = &manager->config,
-                               .gpio_write_pin = drv8825_gpio_write_pin,
-                               .pwm_user = &manager->config,
-                               .pwm_start = drv8825_pwm_start,
-                               .pwm_stop = drv8825_pwm_stop,
-                               .pwm_set_frequency = drv8825_pwm_set_frequency});
+    as5600_initialize_chip(&manager->as5600,
+                           parameters->min_position,
+                           parameters->max_position);
+
+    a4988_initialize(
+        &manager->a4988,
+        &(a4988_config_t){.pin_dir = config->a4988_dir_pin},
+        &(a4988_interface_t){.gpio_user = &manager->config,
+                             .gpio_write_pin = a4988_gpio_write_pin,
+                             .pwm_user = &manager->config,
+                             .pwm_start = a4988_pwm_start,
+                             .pwm_stop = a4988_pwm_stop,
+                             .pwm_set_frequency = a4988_pwm_set_frequency});
 
     step_motor_initialize(
         &manager->motor,
@@ -585,14 +654,15 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
             .device_set_direction = step_motor_device_set_direction},
         0.0F);
 
-    pid_regulator_initialize(
-        &manager->regulator,
-        &(pid_regulator_config_t){.prop_gain = parameters->prop_gain,
-                                  .int_gain = parameters->int_gain,
-                                  .dot_gain = parameters->dot_gain,
-                                  .sat_gain = parameters->sat_gain,
-                                  .min_control = parameters->min_speed,
-                                  .max_control = parameters->max_speed});
+    pid_regulator_initialize(&manager->regulator,
+                             &(pid_regulator_config_t){
+                                 .prop_gain = parameters->prop_gain,
+                                 .int_gain = parameters->int_gain,
+                                 .dot_gain = parameters->dot_gain,
+                                 .sat_gain = parameters->sat_gain,
+                                 .min_control = parameters->min_speed,
+                                 .max_control = parameters->max_speed,
+                                 .dead_error = parameters->step_change / 2.0F});
 
     motor_driver_initialize(
         &manager->driver,
@@ -613,6 +683,10 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_READY)) {
         return ATLAS_ERR_FAIL;
+    }
+
+    while (1) {
+        ATLAS_LOG(TAG, "Sent joint ready!!!\n\r");
     }
 
     return ATLAS_ERR_OK;

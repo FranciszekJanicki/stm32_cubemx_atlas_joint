@@ -11,7 +11,7 @@ target_include_directories(joint_task PUBLIC
 
 target_link_libraries(joint_task PUBLIC
     motor_driver
-    drv8825
+    a4988
     step_motor
     pid_regulator
     stm32cubemx

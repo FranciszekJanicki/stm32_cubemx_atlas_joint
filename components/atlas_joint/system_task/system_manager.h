@@ -12,9 +12,9 @@ typedef struct {
     atlas_joint_num_t num;
     RTC_HandleTypeDef* timestamp_rtc;
 #ifdef PACKET_TEST
-    TIM_HandleTypeDef* delta_timer;       
+    TIM_HandleTypeDef* delta_timer;
     TIM_HandleTypeDef* packet_ready_timer;
-    #endif
+#endif
 } system_config_t;
 
 typedef struct {
