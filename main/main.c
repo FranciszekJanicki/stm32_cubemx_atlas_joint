@@ -2,6 +2,7 @@
 #include "atlas_joint.h"
 #include "gpio.h"
 #include "i2c.h"
+#include "joint_config.h"
 #include "main.h"
 #include "rtc.h"
 #include "spi.h"
@@ -10,7 +11,7 @@
 
 static atlas_joint_config_t config = {
     .uart_ctx = {.uart_bus = &huart2},
-    .system_ctx = {.config = {.num = ATLAS_JOINT_NUM_1,
+    .system_ctx = {.config = {.num = JOINT_NUM,
                               .timestamp_rtc = &hrtc,
                               .packet_ready_timer = &htim3,
                               .delta_timer = &htim1}},
@@ -20,24 +21,14 @@ static atlas_joint_config_t config = {
     .joint_ctx = {.config = {.a4988_pwm_timer = &htim2,
                              .a4988_pwm_channel = TIM_CHANNEL_1,
                              .a4988_gpio = GPIOA,
-                             .a4988_dir_pin = GPIO_PIN_0,
+                             .a4988_dir_pin = GPIO_PIN_9,
                              .ina226_i2c_bus = &hi2c1,
                              .ina226_i2c_address = 0x00,
                              .as5600_i2c_bus = &hi2c1,
                              .as5600_gpio = GPIOC,
                              .as5600_i2c_address = AS5600_SLAVE_ADDRESS,
                              .as5600_dir_pin = GPIO_PIN_2},
-                  .parameters = {.prop_gain = 10.0F,
-                                 .int_gain = 0.0F,
-                                 .dot_gain = 0.0F,
-                                 .sat_gain = 0.0F,
-                                 .min_position = 0.0F,
-                                 .max_position = 359.0F,
-                                 .min_speed = 0.5F,
-                                 .max_speed = 500.0F,
-                                 .step_change = 1.8F,
-                                 .current_limit = 2.0F,
-                                 .dead_error = 1.8F}}};
+                  .parameters = JOINT_PARAMS}};
 
 void SystemClock_Config(void);
 

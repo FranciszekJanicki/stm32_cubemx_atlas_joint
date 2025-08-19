@@ -246,13 +246,10 @@ static atlas_err_t packet_manager_notify_joint_packet_ready_handler(
 #ifdef PACKET_TEST
     system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
                             .origin = SYSTEM_EVENT_ORIGIN_PACKET};
-    static float32_t position = 0.0F, step = 1.0F;
-    if (position > 359.0F || position < 1.0F) {
-        step *= -1.0F;
-    }
-    event.payload.joint_reference.position = position;
+
+    event.payload.joint_reference.position = 300.0F;
+    event.payload.joint_reference.delta_time = 0.001F;
     packet_manager_send_system_event(&event);
-    position += step;
 #else
     atlas_joint_packet_t packet;
     if (packet_manager_receive_joint_packet(manager, &packet)) {
@@ -325,7 +322,7 @@ static atlas_err_t packet_manager_event_joint_measure_handler(
     packet.timestamp = joint_measure->timestamp;
     packet.payload.joint_measure = joint_measure->measure;
 
-#ifndef PACKET_TEST
+#ifdef PACKET_TEST
     ATLAS_LOG(TAG,
               "position measured: %d [deg * 100]",
               (int32_t)packet.payload.joint_measure.position * 100);

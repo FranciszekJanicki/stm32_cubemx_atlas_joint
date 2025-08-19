@@ -156,7 +156,8 @@ static as5600_err_t as5600_bus_write_data(void* user,
         return AS5600_ERR_FAIL;
     }
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    //  SemaphoreHandle_t joint_mutex =
+    //  semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
     HAL_StatusTypeDef err;
 
     //  if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
@@ -166,7 +167,7 @@ static as5600_err_t as5600_bus_write_data(void* user,
                             I2C_MEMADD_SIZE_8BIT,
                             data,
                             data_size,
-                            10);
+                            100);
     //    xSemaphoreGive(joint_mutex);
     // }
 
@@ -184,7 +185,8 @@ static as5600_err_t as5600_bus_read_data(void* user,
         return AS5600_ERR_FAIL;
     }
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    //  SemaphoreHandle_t joint_mutex =
+    //  semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
     HAL_StatusTypeDef err;
 
     // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
@@ -194,7 +196,7 @@ static as5600_err_t as5600_bus_read_data(void* user,
                            I2C_MEMADD_SIZE_8BIT,
                            data,
                            data_size,
-                           10);
+                           100);
     //     xSemaphoreGive(joint_mutex);
     // }
 
@@ -683,10 +685,6 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_READY)) {
         return ATLAS_ERR_FAIL;
-    }
-
-    while (1) {
-        ATLAS_LOG(TAG, "Sent joint ready!!!\n\r");
     }
 
     return ATLAS_ERR_OK;
