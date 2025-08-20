@@ -17,12 +17,3 @@ void atlas_joint_initialize(atlas_joint_config_t const* config)
 
     vTaskStartScheduler();
 }
-
-#undef UART_TASK_STACK_DEPTH
-#undef UART_TASK_PRIORITY
-#undef UART_TASK_NAME
-
-#undef UART_BUFFER_STORAGE_SIZE
-
-#undef UART_STREAM_BUFFER_STORAGE_SIZE
-#undef UART_STREAM_BUFFER_TRIGGER

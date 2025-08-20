@@ -46,7 +46,7 @@ int main(void)
     MX_SPI1_Init();
     MX_RTC_Init();
 
-    HAL_Delay(50);
+    HAL_Delay(500);
 
     atlas_joint_initialize(&config);
 }
