@@ -411,13 +411,13 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         motor_driver_set_position(&manager->driver,
                                   manager->reference.position,
                                   manager->reference.delta_time);
-   
+
     ATLAS_LOG(TAG, "set position result: %d", err);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
-        // if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
-        //     return ATLAS_ERR_FAIL;
-        // }
+        if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
+            return ATLAS_ERR_FAIL;
+        }
 
         step_motor_set_speed(&manager->motor, 0.0F);
         manager->has_fault = true;
@@ -434,6 +434,18 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
             manager->has_fault = false;
         }
     }
+
+    motor_driver_state_t state;
+    err = motor_driver_get_state(&manager->driver, &state);
+
+    ATLAS_LOG(TAG,
+              "measure position: %f, reference position: %f, error position: "
+              "%f, control speed: %f, fault current: %f",
+              state.measure_position,
+              state.reference_position,
+              state.error_position,
+              state.control_speed,
+              state.fault_current);
 
     return ATLAS_ERR_OK;
 }
