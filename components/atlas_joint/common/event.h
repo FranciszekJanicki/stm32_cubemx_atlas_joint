@@ -11,18 +11,21 @@ typedef enum {
 typedef enum {
     SYSTEM_EVENT_TYPE_JOINT_START,
     SYSTEM_EVENT_TYPE_JOINT_STOP,
+    SYSTEM_EVENT_TYPE_JOINT_RESET,
     SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
     SYSTEM_EVENT_TYPE_JOINT_MEASURE,
 } system_event_type_t;
 
 typedef atlas_joint_start_t system_event_payload_joint_start_t;
 typedef atlas_joint_stop_t system_event_payload_joint_stop_t;
+typedef atlas_joint_reset_t system_event_payload_joint_reset_t;
 typedef atlas_joint_reference_t system_event_payload_joint_reference_t;
 typedef atlas_joint_measure_t system_event_payload_joint_measure_t;
 
 typedef union {
     system_event_payload_joint_start_t joint_start;
     system_event_payload_joint_stop_t joint_stop;
+    system_event_payload_joint_reset_t joint_reset;
     system_event_payload_joint_reference_t joint_reference;
     system_event_payload_joint_measure_t joint_measure;
 } system_event_payload_t;
@@ -36,16 +39,19 @@ typedef struct {
 typedef enum {
     JOINT_EVENT_TYPE_START,
     JOINT_EVENT_TYPE_STOP,
+    JOINT_EVENT_TYPE_RESET,
     JOINT_EVENT_TYPE_REFERENCE,
 } joint_event_type_t;
 
 typedef atlas_joint_start_t joint_event_payload_start_t;
 typedef atlas_joint_stop_t joint_event_payload_stop_t;
+typedef atlas_joint_reset_t joint_event_payload_reset_t;
 typedef atlas_joint_reference_t joint_event_payload_reference_t;
 
 typedef union {
     joint_event_payload_start_t start;
     joint_event_payload_stop_t stop;
+    joint_event_payload_reset_t reset;
     joint_event_payload_reference_t reference;
 } joint_event_payload_t;
 

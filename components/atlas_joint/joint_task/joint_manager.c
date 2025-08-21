@@ -221,19 +221,18 @@ static ina226_err_t ina226_bus_write_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                      config->ina226_i2c_address,
-                      address,
-                      I2C_MEMADD_SIZE_8BIT,
-                      (uint8_t*)data,
-                      data_size,
-                      10);
-    //     xSemaphoreGive(joint_mutex);
-    // }
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        HAL_I2C_Mem_Write(config->ina226_i2c_bus,
+                          config->ina226_i2c_address,
+                          address,
+                          I2C_MEMADD_SIZE_8BIT,
+                          (uint8_t*)data,
+                          data_size,
+                          10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return INA226_ERR_OK;
 }
@@ -247,19 +246,18 @@ static ina226_err_t ina226_bus_read_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                     config->ina226_i2c_address,
-                     address,
-                     I2C_MEMADD_SIZE_8BIT,
-                     data,
-                     data_size,
-                     10);
-    //     xSemaphoreGive(joint_mutex);
-    // }
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        HAL_I2C_Mem_Read(config->ina226_i2c_bus,
+                         config->ina226_i2c_address,
+                         address,
+                         I2C_MEMADD_SIZE_8BIT,
+                         data,
+                         data_size,
+                         10);
+        xSemaphoreGive(joint_mutex);
+    }
 
     return INA226_ERR_OK;
 }
@@ -405,7 +403,7 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (manager->reference.delta_time == 0.0F) {
+    if (manager->reference.delta_time == 0.0F || manager->has_fault) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -413,13 +411,16 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
         motor_driver_set_position(&manager->driver,
                                   manager->reference.position,
                                   manager->reference.delta_time);
+   
+    ATLAS_LOG(TAG, "set position result: %d", err);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
         // if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
         //     return ATLAS_ERR_FAIL;
         // }
-        ATLAS_LOG(TAG, "Failed to set position: %d", err);
 
+        step_motor_set_speed(&manager->motor, 0.0F);
+        manager->has_fault = true;
     } else {
         system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
         event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
@@ -427,6 +428,10 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
 
         if (!joint_manager_send_system_event(&event)) {
             return ATLAS_ERR_FAIL;
+        }
+
+        if (manager->has_fault) {
+            manager->has_fault = false;
         }
     }
 
@@ -474,7 +479,9 @@ static atlas_err_t joint_manager_event_start_handler(
         return ATLAS_ERR_ALREADY_RUNNING;
     }
 
-    //  step_motor_reset(&manager->motor);
+    if (manager->has_fault) {
+        return ATLAS_ERR_IMPROPER_STATE;
+    }
 
     manager->is_running = true;
 
@@ -492,9 +499,29 @@ static atlas_err_t joint_manager_event_stop_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
+    step_motor_device_set_direction(&manager->motor, STEP_MOTOR_DIRECTION_STOP);
+
+    manager->is_running = false;
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t joint_manager_event_reset_handler(
+    joint_manager_t* manager,
+    joint_event_payload_reset_t const* payload)
+{
+    ATLAS_ASSERT(manager && payload);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    pid_regulator_reset(&manager->regulator);
     step_motor_reset(&manager->motor);
 
     manager->is_running = false;
+    manager->has_fault = false;
 
     return ATLAS_ERR_OK;
 }
@@ -569,6 +596,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     manager->config = *config;
     manager->is_running = false;
+    manager->has_fault = false;
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
     manager->reference.position = 0.0F;

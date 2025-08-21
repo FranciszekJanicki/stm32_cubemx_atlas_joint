@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct {
     bool is_running;
+    bool has_fault;
 
     atlas_joint_measure_t measure;
     atlas_joint_reference_t reference;
