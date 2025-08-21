@@ -50,10 +50,6 @@ static a4988_err_t a4988_gpio_write_pin(void* user, uint32_t pin, bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->a4988_gpio == NULL) {
-        return A4988_ERR_FAIL;
-    }
-
     HAL_GPIO_WritePin(config->a4988_gpio, pin, (GPIO_PinState)state);
 
     return A4988_ERR_OK;
@@ -63,37 +59,23 @@ static a4988_err_t a4988_pwm_start(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->a4988_pwm_timer == NULL) {
-        return A4988_ERR_FAIL;
-    }
+    HAL_TIM_PWM_Start_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
 
-    HAL_StatusTypeDef err = HAL_TIM_PWM_Start_IT(config->a4988_pwm_timer,
-                                                 config->a4988_pwm_channel);
-
-    return err == HAL_OK ? A4988_ERR_OK : A4988_ERR_FAIL;
+    return A4988_ERR_OK;
 }
 
 static a4988_err_t a4988_pwm_stop(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->a4988_pwm_timer == NULL) {
-        return A4988_ERR_FAIL;
-    }
+    HAL_TIM_PWM_Stop_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
 
-    HAL_StatusTypeDef err =
-        HAL_TIM_PWM_Stop_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
-
-    return err == HAL_OK ? A4988_ERR_OK : A4988_ERR_FAIL;
+    return A4988_ERR_OK;
 }
 
 static a4988_err_t a4988_pwm_set_frequency(void* user, uint32_t frequency)
 {
     joint_config_t* config = (joint_config_t*)user;
-
-    if (config->a4988_pwm_timer == NULL) {
-        return A4988_ERR_FAIL;
-    }
 
     uint32_t clock_hz = HAL_RCC_GetPCLK1Freq();
     if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
@@ -136,10 +118,6 @@ static as5600_err_t as5600_gpio_write_pin(void* user, uint32_t pin, bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->as5600_gpio == NULL) {
-        return AS5600_ERR_FAIL;
-    }
-
     HAL_GPIO_WritePin(config->as5600_gpio, pin, (GPIO_PinState)state);
 
     return AS5600_ERR_OK;
@@ -152,26 +130,20 @@ static as5600_err_t as5600_bus_write_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (!config->as5600_i2c_bus) {
-        return AS5600_ERR_FAIL;
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        HAL_I2C_Mem_Write(config->as5600_i2c_bus,
+                          config->as5600_i2c_address << 1,
+                          address,
+                          I2C_MEMADD_SIZE_8BIT,
+                          data,
+                          data_size,
+                          100);
+        xSemaphoreGive(joint_mutex);
     }
 
-    //  SemaphoreHandle_t joint_mutex =
-    //  semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-    HAL_StatusTypeDef err;
-
-    //  if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    err = HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                            config->as5600_i2c_address << 1,
-                            address,
-                            I2C_MEMADD_SIZE_8BIT,
-                            data,
-                            data_size,
-                            100);
-    //    xSemaphoreGive(joint_mutex);
-    // }
-
-    return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
+    return AS5600_ERR_OK;
 }
 
 static as5600_err_t as5600_bus_read_data(void* user,
@@ -181,26 +153,20 @@ static as5600_err_t as5600_bus_read_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    if (!config->as5600_i2c_bus) {
-        return AS5600_ERR_FAIL;
+    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+
+    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+        HAL_I2C_Mem_Read(config->as5600_i2c_bus,
+                         config->as5600_i2c_address << 1,
+                         address,
+                         I2C_MEMADD_SIZE_8BIT,
+                         data,
+                         data_size,
+                         100);
+        xSemaphoreGive(joint_mutex);
     }
 
-    //  SemaphoreHandle_t joint_mutex =
-    //  semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-    HAL_StatusTypeDef err;
-
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    err = HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                           config->as5600_i2c_address << 1,
-                           address,
-                           I2C_MEMADD_SIZE_8BIT,
-                           data,
-                           data_size,
-                           100);
-    //     xSemaphoreGive(joint_mutex);
-    // }
-
-    return err == HAL_OK ? AS5600_ERR_OK : AS5600_ERR_FAIL;
+    return AS5600_ERR_OK;
 }
 
 static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
@@ -255,25 +221,21 @@ static ina226_err_t ina226_bus_write_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->ina226_i2c_bus == NULL) {
-        return INA226_ERR_FAIL;
-    }
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-    HAL_StatusTypeDef err;
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Write(config->ina226_i2c_bus,
+                      config->ina226_i2c_address,
+                      address,
+                      I2C_MEMADD_SIZE_8BIT,
+                      (uint8_t*)data,
+                      data_size,
+                      10);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        err = HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                                config->ina226_i2c_address,
-                                address,
-                                I2C_MEMADD_SIZE_8BIT,
-                                (uint8_t*)data,
-                                data_size,
-                                10);
-        xSemaphoreGive(joint_mutex);
-    }
-
-    return err == HAL_OK ? INA226_ERR_OK : INA226_ERR_FAIL;
+    return INA226_ERR_OK;
 }
 
 static ina226_err_t ina226_bus_read_data(void* user,
@@ -285,25 +247,21 @@ static ina226_err_t ina226_bus_read_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    if (config->ina226_i2c_bus == NULL) {
-        return INA226_ERR_FAIL;
-    }
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-    HAL_StatusTypeDef err;
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Read(config->ina226_i2c_bus,
+                     config->ina226_i2c_address,
+                     address,
+                     I2C_MEMADD_SIZE_8BIT,
+                     data,
+                     data_size,
+                     10);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        err = HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                               config->ina226_i2c_address,
-                               address,
-                               I2C_MEMADD_SIZE_8BIT,
-                               data,
-                               data_size,
-                               10);
-        xSemaphoreGive(joint_mutex);
-    }
-
-    return err == HAL_OK ? INA226_ERR_OK : INA226_ERR_FAIL;
+    return INA226_ERR_OK;
 }
 
 static ina226_err_t ina226_initialize_chip(ina226_t* ina226,
@@ -320,9 +278,9 @@ static step_motor_err_t step_motor_device_set_frequency(void* user,
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    a4988_err_t err = a4988_set_frequency(&manager->a4988, frequency);
+    a4988_set_frequency(&manager->a4988, frequency);
 
-    return err == A4988_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
+    return STEP_MOTOR_ERR_OK;
 }
 
 static step_motor_err_t step_motor_device_set_direction(
@@ -333,10 +291,9 @@ static step_motor_err_t step_motor_device_set_direction(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    a4988_err_t err =
-        a4988_set_direction(&manager->a4988, (a4988_direction_t)direction);
+    a4988_set_direction(&manager->a4988, (a4988_direction_t)direction);
 
-    return err == A4988_ERR_OK ? STEP_MOTOR_ERR_OK : STEP_MOTOR_ERR_FAIL;
+    return STEP_MOTOR_ERR_OK;
 }
 
 static motor_driver_err_t motor_driver_motor_set_speed(void* user,
@@ -346,10 +303,9 @@ static motor_driver_err_t motor_driver_motor_set_speed(void* user,
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    step_motor_err_t err = step_motor_set_speed(&manager->motor, speed);
+    step_motor_set_speed(&manager->motor, speed);
 
-    return err == STEP_MOTOR_ERR_OK ? MOTOR_DRIVER_ERR_OK
-                                    : MOTOR_DRIVER_ERR_FAIL;
+    return MOTOR_DRIVER_ERR_OK;
 }
 
 static motor_driver_err_t motor_driver_encoder_get_position(void* user,
@@ -359,12 +315,11 @@ static motor_driver_err_t motor_driver_encoder_get_position(void* user,
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    as5600_err_t err =
-        as5600_get_angle_data_scaled_bus(&manager->as5600, position);
+    as5600_get_angle_data_scaled_bus(&manager->as5600, position);
 
     manager->measure.position = *position;
 
-    return err == AS5600_ERR_OK ? MOTOR_DRIVER_ERR_OK : MOTOR_DRIVER_ERR_FAIL;
+    return MOTOR_DRIVER_ERR_OK;
 }
 
 static motor_driver_err_t motor_driver_regulator_get_control(
@@ -377,13 +332,12 @@ static motor_driver_err_t motor_driver_regulator_get_control(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    pid_regulator_err_t err = pid_regulator_get_sat_control(&manager->regulator,
-                                                            error,
-                                                            delta_time,
-                                                            control);
+    pid_regulator_get_sat_control(&manager->regulator,
+                                  error,
+                                  delta_time,
+                                  control);
 
-    return err == PID_REGULATOR_ERR_OK ? MOTOR_DRIVER_ERR_OK
-                                       : MOTOR_DRIVER_ERR_FAIL;
+    return MOTOR_DRIVER_ERR_OK;
 }
 
 static motor_driver_err_t motor_driver_fault_get_current(void* user,
@@ -461,9 +415,11 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
                                   manager->reference.delta_time);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
-        if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
-            return ATLAS_ERR_FAIL;
-        }
+        // if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
+        //     return ATLAS_ERR_FAIL;
+        // }
+        ATLAS_LOG(TAG, "Failed to set position: %d", err);
+
     } else {
         system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
         event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;

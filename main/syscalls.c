@@ -44,19 +44,22 @@ int _read(int file, char* ptr, int len)
 
 int _write(int file, char* ptr, int len)
 {
+#ifdef USE_UART_TASK
     StreamBufferHandle_t uart_stream_buffer =
         stream_buffer_manager_get(STREAM_BUFFER_TYPE_UART);
+
+    return xStreamBufferSend(uart_stream_buffer, ptr, len, len);
+#else
     SemaphoreHandle_t uart_mutex = semaphore_manager_get(SEMAPHORE_TYPE_UART);
 
     size_t written = 0U;
-    // if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(100))) {
-    written = len;
-    written = xStreamBufferSend(uart_stream_buffer, ptr, len, 0);
-    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
-    //     xSemaphoreGive(uart_mutex);
-    // }
+    if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(len))) {
+        written = HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
+        xSemaphoreGive(uart_mutex);
+    }
 
     return written;
+#endif
 }
 
 int _close(int file)

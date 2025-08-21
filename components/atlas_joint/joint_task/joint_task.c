@@ -6,7 +6,7 @@
 #include "task.h"
 #include <stdint.h>
 
-#define JOINT_TASK_STACK_DEPTH (7000U / sizeof(StackType_t))
+#define JOINT_TASK_STACK_DEPTH (8000U / sizeof(StackType_t))
 #define JOINT_TASK_PRIORITY (1U)
 #define JOINT_TASK_NAME ("joint_task")
 
@@ -44,6 +44,13 @@ static TaskHandle_t joint_task_create_task(joint_task_ctx_t* task_ctx)
                              &joint_task_buffer);
 }
 
+static SemaphoreHandle_t joint_task_create_mutex(void)
+{
+    static StaticSemaphore_t joint_semaphore_buffer;
+
+    return xSemaphoreCreateBinaryStatic(&joint_semaphore_buffer);
+}
+
 static QueueHandle_t joint_task_create_queue(void)
 {
     static StaticQueue_t joint_queue_buffer;
@@ -64,6 +71,11 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
+    SemaphoreHandle_t joint_mutex = joint_task_create_mutex();
+    if (joint_mutex == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
     TaskHandle_t joint_task = joint_task_create_task(task_ctx);
     if (joint_task == NULL) {
         return ATLAS_ERR_FAIL;
@@ -71,6 +83,7 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
 
     task_manager_set(TASK_TYPE_JOINT, joint_task);
     queue_manager_set(QUEUE_TYPE_JOINT, joint_queue);
+    semaphore_manager_set(SEMAPHORE_TYPE_JOINT, joint_mutex);
 
     return ATLAS_ERR_OK;
 }

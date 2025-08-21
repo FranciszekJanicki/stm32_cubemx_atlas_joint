@@ -324,8 +324,8 @@ static atlas_err_t packet_manager_event_joint_measure_handler(
 
 #ifdef PACKET_TEST
     ATLAS_LOG(TAG,
-              "position measured: %d [deg * 100]",
-              (int32_t)packet.payload.joint_measure.position * 100);
+              "position measured: %f",
+              packet.payload.joint_measure.position);
 #else
     if (!packet_manager_send_robot_packet(manager, &packet)) {
         return ATLAS_ERR_FAIL;
