@@ -18,16 +18,16 @@
 #include <stdint.h>
 
 typedef struct {
-    GPIO_TypeDef* a4988_gpio;
-    uint32_t a4988_dir_pin;
+    GPIO_TypeDef* a4988_dir_gpio;
+    uint16_t a4988_dir_pin;
     TIM_HandleTypeDef* a4988_pwm_timer;
-    uint32_t a4988_pwm_channel;
+    uint16_t a4988_pwm_channel;
 
     I2C_HandleTypeDef* ina226_i2c_bus;
     uint16_t ina226_i2c_address;
 
-    GPIO_TypeDef* as5600_gpio;
-    uint32_t as5600_dir_pin;
+    GPIO_TypeDef* as5600_dir_gpio;
+    uint16_t as5600_dir_pin;
     I2C_HandleTypeDef* as5600_i2c_bus;
     uint16_t as5600_i2c_address;
 } joint_config_t;
@@ -59,8 +59,11 @@ typedef struct {
     float32_t max_speed;
     float32_t min_position;
     float32_t max_position;
+    float32_t min_acceleration;
+    float32_t max_acceleration;
     float32_t step_change;
     float32_t current_limit;
+    bool magnet_polarity;
 } joint_parameters_t;
 
 atlas_err_t joint_manager_initialize(joint_manager_t* manager,

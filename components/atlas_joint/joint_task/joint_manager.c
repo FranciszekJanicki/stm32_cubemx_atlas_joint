@@ -50,7 +50,9 @@ static a4988_err_t a4988_gpio_write_pin(void* user, uint32_t pin, bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_GPIO_WritePin(config->a4988_gpio, pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(config->a4988_dir_gpio,
+                      config->a4988_dir_pin,
+                      (GPIO_PinState)state);
 
     return A4988_ERR_OK;
 }
@@ -118,7 +120,9 @@ static as5600_err_t as5600_gpio_write_pin(void* user, uint32_t pin, bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_GPIO_WritePin(config->as5600_gpio, pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(config->as5600_dir_gpio,
+                      config->as5600_dir_pin,
+                      (GPIO_PinState)state);
 
     return AS5600_ERR_OK;
 }
@@ -134,7 +138,7 @@ static as5600_err_t as5600_bus_write_data(void* user,
 
     if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
         HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                          config->as5600_i2c_address << 1,
+                          config->as5600_i2c_address << 1U,
                           address,
                           I2C_MEMADD_SIZE_8BIT,
                           data,
@@ -157,7 +161,7 @@ static as5600_err_t as5600_bus_read_data(void* user,
 
     if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
         HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                         config->as5600_i2c_address << 1,
+                         config->as5600_i2c_address << 1U,
                          address,
                          I2C_MEMADD_SIZE_8BIT,
                          data,
@@ -171,12 +175,14 @@ static as5600_err_t as5600_bus_read_data(void* user,
 
 static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
                                            float32_t min_angle,
-                                           float32_t max_angle)
+                                           float32_t max_angle,
+                                           bool magnet_polarity)
 {
     as5600_status_reg_t status;
     as5600_err_t err = as5600_get_status_reg(as5600, &status);
-    if (err != AS5600_ERR_OK)
+    if (err != AS5600_ERR_OK) {
         return err;
+    }
 
     float32_t angle_range = (max_angle - min_angle);
 
@@ -185,13 +191,15 @@ static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
 
     as5600_zpos_reg_t zpos = {.zpos = min_raw & 0x0FFF};
     err = as5600_set_zpos_reg(as5600, &zpos);
-    if (err != AS5600_ERR_OK)
+    if (err != AS5600_ERR_OK) {
         return err;
+    }
 
     as5600_mpos_reg_t mpos = {.mpos = max_raw & 0x0FFF};
     err = as5600_set_mpos_reg(as5600, &mpos);
-    if (err != AS5600_ERR_OK)
+    if (err != AS5600_ERR_OK) {
         return err;
+    }
 
     as5600_conf_reg_t conf = {.wd = AS5600_WATCHDOG_OFF,
                               .fth = AS5600_SLOW_FILTER_X16,
@@ -201,15 +209,17 @@ static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
                               .hyst = AS5600_HYSTERESIS_OFF,
                               .pm = AS5600_POWER_MODE_NOM};
     err = as5600_set_conf_reg(as5600, &conf);
-    if (err != AS5600_ERR_OK)
+    if (err != AS5600_ERR_OK) {
         return err;
+    }
 
     as5600_zmco_reg_t zmco;
     err = as5600_get_zmco_reg(as5600, &zmco);
-    if (err != AS5600_ERR_OK)
+    if (err != AS5600_ERR_OK) {
         return err;
+    }
 
-    return AS5600_ERR_OK;
+    return as5600_set_direction(as5600, (as5600_direction_t)magnet_polarity);
 }
 
 static ina226_err_t ina226_bus_write_data(void* user,
@@ -225,7 +235,7 @@ static ina226_err_t ina226_bus_write_data(void* user,
 
     if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
         HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                          config->ina226_i2c_address,
+                          config->ina226_i2c_address << 1U,
                           address,
                           I2C_MEMADD_SIZE_8BIT,
                           (uint8_t*)data,
@@ -250,7 +260,7 @@ static ina226_err_t ina226_bus_read_data(void* user,
 
     if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
         HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                         config->ina226_i2c_address,
+                         config->ina226_i2c_address << 1U,
                          address,
                          I2C_MEMADD_SIZE_8BIT,
                          data,
@@ -315,8 +325,6 @@ static motor_driver_err_t motor_driver_encoder_get_position(void* user,
 
     as5600_get_angle_data_scaled_bus(&manager->as5600, position);
 
-    manager->measure.position = *position;
-
     return MOTOR_DRIVER_ERR_OK;
 }
 
@@ -345,7 +353,7 @@ static motor_driver_err_t motor_driver_fault_get_current(void* user,
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    manager->measure.current = 1.0F;
+    *current = 1.0F;
 
     return MOTOR_DRIVER_ERR_OK;
 }
@@ -412,16 +420,32 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
                                   manager->reference.position,
                                   manager->reference.delta_time);
 
-    ATLAS_LOG(TAG, "set position result: %d", err);
-
     if (err != MOTOR_DRIVER_ERR_OK) {
         if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
             return ATLAS_ERR_FAIL;
         }
 
-        step_motor_set_speed(&manager->motor, 0.0F);
+        motor_driver_set_speed(&manager->driver,
+                               0.0F,
+                               manager->reference.delta_time);
         manager->has_fault = true;
     } else {
+        motor_driver_state_t state;
+        motor_driver_get_state(&manager->driver, &state);
+
+        ATLAS_LOG(
+            TAG,
+            "measure position: %f, reference position: %f, error position: "
+            "%f, control speed: %f, fault current: %f",
+            state.measure_position,
+            manager->reference.position,
+            state.measure_position - manager->reference.position,
+            state.control_speed,
+            state.fault_current);
+
+        manager->measure.position = state.measure_position;
+        manager->measure.current = state.fault_current;
+
         system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
         event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
         event.payload.joint_measure = manager->measure;
@@ -430,22 +454,12 @@ static atlas_err_t joint_manager_notify_delta_timer_handler(
             return ATLAS_ERR_FAIL;
         }
 
+        atlas_joint_measure_print(&manager->measure);
+
         if (manager->has_fault) {
             manager->has_fault = false;
         }
     }
-
-    motor_driver_state_t state;
-    err = motor_driver_get_state(&manager->driver, &state);
-
-    ATLAS_LOG(TAG,
-              "measure position: %f, reference position: %f, error position: "
-              "%f, control speed: %f, fault current: %f",
-              state.measure_position,
-              state.reference_position,
-              state.error_position,
-              state.control_speed,
-              state.fault_current);
 
     return ATLAS_ERR_OK;
 }
@@ -511,7 +525,9 @@ static atlas_err_t joint_manager_event_stop_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    step_motor_device_set_direction(&manager->motor, STEP_MOTOR_DIRECTION_STOP);
+    motor_driver_set_speed(&manager->driver,
+                           0.0F,
+                           manager->reference.delta_time);
 
     manager->is_running = false;
 
@@ -549,9 +565,9 @@ static atlas_err_t joint_manager_event_reference_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    atlas_joint_reference_print(reference);
-
     manager->reference = *reference;
+
+    atlas_joint_reference_print(&manager->reference);
 
     return ATLAS_ERR_OK;
 }
@@ -616,8 +632,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     as5600_initialize(
         &manager->as5600,
-        &(as5600_config_t){.dir_pin = config->as5600_dir_pin,
-                           .max_angle = parameters->max_position,
+        &(as5600_config_t){.max_angle = parameters->max_position,
                            .min_angle = parameters->min_position},
         &(as5600_interface_t){.gpio_user = &manager->config,
                               .gpio_write_pin = as5600_gpio_write_pin,
@@ -627,11 +642,12 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     as5600_initialize_chip(&manager->as5600,
                            parameters->min_position,
-                           parameters->max_position);
+                           parameters->max_position,
+                           parameters->magnet_polarity);
 
     a4988_initialize(
         &manager->a4988,
-        &(a4988_config_t){.pin_dir = config->a4988_dir_pin},
+        &(a4988_config_t){},
         &(a4988_interface_t){.gpio_user = &manager->config,
                              .gpio_write_pin = a4988_gpio_write_pin,
                              .pwm_user = &manager->config,
@@ -652,23 +668,26 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
             .device_set_direction = step_motor_device_set_direction},
         0.0F);
 
-    pid_regulator_initialize(&manager->regulator,
-                             &(pid_regulator_config_t){
-                                 .prop_gain = parameters->prop_gain,
-                                 .int_gain = parameters->int_gain,
-                                 .dot_gain = parameters->dot_gain,
-                                 .sat_gain = parameters->sat_gain,
-                                 .min_control = parameters->min_speed,
-                                 .max_control = parameters->max_speed,
-                                 .dead_error = parameters->step_change / 2.0F});
+    pid_regulator_initialize(
+        &manager->regulator,
+        &(pid_regulator_config_t){.prop_gain = parameters->prop_gain,
+                                  .int_gain = parameters->int_gain,
+                                  .dot_gain = parameters->dot_gain,
+                                  .sat_gain = parameters->sat_gain,
+                                  .min_control = parameters->min_speed,
+                                  .max_control = parameters->max_speed,
+                                  .dead_error = parameters->dead_error});
 
     motor_driver_initialize(
         &manager->driver,
-        &(motor_driver_config_t){.min_position = parameters->min_position,
-                                 .max_position = parameters->max_position,
-                                 .min_speed = parameters->min_speed,
-                                 .max_speed = parameters->max_speed,
-                                 .max_current = parameters->current_limit},
+        &(motor_driver_config_t){
+            .min_position = parameters->min_position,
+            .max_position = parameters->max_position,
+            .min_speed = parameters->min_speed,
+            .max_speed = parameters->max_speed,
+            .min_acceleration = parameters->min_acceleration,
+            .max_acceleration = parameters->max_acceleration,
+            .max_current = parameters->current_limit},
         &(motor_driver_interface_t){
             .motor_user = manager,
             .motor_set_speed = motor_driver_motor_set_speed,
