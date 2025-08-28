@@ -189,12 +189,14 @@
 
 #define TIMESTAMP_RTC (&hrtc)
 
-#define PACKET_SPI_BUS (&hspi1)
-#define PACKET_READY_TIMER (&htim3)
-#define PACKET_READY_GPIO GPIOA
+#define PACKET_SPI_BUS (NULL)
+#define PACKET_READY_GPIO NULL
 #define PACKET_READY_PIN (1U << 0U)
 
+#ifdef PACKET_TEST
+#define PACKET_READY_TIMER (&htim3)
 #define DELTA_TIMER (&htim1)
+#endif
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)
@@ -202,7 +204,7 @@
 #define AS5600_DIR_PIN (1U << 2U)
 
 #define INA226_I2C_BUS (&hi2c1)
-#define INA226_I2C_ADDRESS (0x00U)
+#define INA226_I2C_ADDRESS (0x40U)
 
 #define A4988_PWM_TIMER (&htim2)
 #define A4988_PWM_CHANNEL TIM_CHANNEL_1

@@ -14,12 +14,14 @@
 #include <stdint.h>
 #include <string.h>
 
-static bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
-                                              uint32_t clock_hz,
-                                              uint32_t max_prescaler,
-                                              uint32_t max_period,
-                                              uint32_t* prescaler,
-                                              uint32_t* period)
+static char const* const TAG = "joint_manager";
+
+static inline bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
+                                                     uint32_t clock_hz,
+                                                     uint32_t max_prescaler,
+                                                     uint32_t max_period,
+                                                     uint32_t* prescaler,
+                                                     uint32_t* period)
 {
     if (frequency_hz == 0U || !prescaler || !period) {
         return false;
@@ -46,7 +48,19 @@ static bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
     return true;
 }
 
-static a4988_err_t a4988_gpio_write_pin(void* user, uint32_t pin, bool state)
+static inline a4988_err_t a4988_gpio_initialize(void* user)
+{
+    return A4988_ERR_OK;
+}
+
+static inline a4988_err_t a4988_gpio_deinitialize(void* user)
+{
+    return A4988_ERR_OK;
+}
+
+static inline a4988_err_t a4988_gpio_write_pin(void* user,
+                                               uint32_t pin,
+                                               bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -57,7 +71,17 @@ static a4988_err_t a4988_gpio_write_pin(void* user, uint32_t pin, bool state)
     return A4988_ERR_OK;
 }
 
-static a4988_err_t a4988_pwm_start(void* user)
+static inline a4988_err_t a4988_pwm_initialize(void* user)
+{
+    return A4988_ERR_OK;
+}
+
+static inline a4988_err_t a4988_pwm_deinitialize(void* user)
+{
+    return A4988_ERR_OK;
+}
+
+static inline a4988_err_t a4988_pwm_start(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -66,7 +90,7 @@ static a4988_err_t a4988_pwm_start(void* user)
     return A4988_ERR_OK;
 }
 
-static a4988_err_t a4988_pwm_stop(void* user)
+static inline a4988_err_t a4988_pwm_stop(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -75,7 +99,8 @@ static a4988_err_t a4988_pwm_stop(void* user)
     return A4988_ERR_OK;
 }
 
-static a4988_err_t a4988_pwm_set_frequency(void* user, uint32_t frequency)
+static inline a4988_err_t a4988_pwm_set_frequency(void* user,
+                                                  uint32_t frequency)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -95,7 +120,7 @@ static a4988_err_t a4988_pwm_set_frequency(void* user, uint32_t frequency)
 
     if (result && period < 0xFFFFU && prescaler < 0xFFFFU) {
         uint32_t tick_hz = clock_hz / (prescaler + 1);
-        uint32_t compare = (tick_hz / 1000000) * 5; // 5 us pulse
+        uint32_t compare = (tick_hz / 1000000) * 5; // 5us pulse
         if (compare == 0) {
             compare = 1;
         }
@@ -116,7 +141,19 @@ static a4988_err_t a4988_pwm_set_frequency(void* user, uint32_t frequency)
     return A4988_ERR_OK;
 }
 
-static as5600_err_t as5600_gpio_write_pin(void* user, uint32_t pin, bool state)
+static inline as5600_err_t as5600_gpio_initialize(void* user)
+{
+    return AS5600_ERR_OK;
+}
+
+static inline as5600_err_t as5600_gpio_deinitialize(void* user)
+{
+    return AS5600_ERR_OK;
+}
+
+static inline as5600_err_t as5600_gpio_write_pin(void* user,
+                                                 uint32_t pin,
+                                                 bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -127,56 +164,75 @@ static as5600_err_t as5600_gpio_write_pin(void* user, uint32_t pin, bool state)
     return AS5600_ERR_OK;
 }
 
-static as5600_err_t as5600_bus_write_data(void* user,
-                                          uint8_t address,
-                                          uint8_t const* data,
-                                          size_t data_size)
+static inline as5600_err_t as5600_bus_initialize(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
+                                 config->as5600_i2c_address,
+                                 3U,
+                                 100U) == HAL_OK
+               ? AS5600_ERR_OK
+               : AS5600_ERR_FAIL;
+}
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                          config->as5600_i2c_address << 1U,
-                          address,
-                          I2C_MEMADD_SIZE_8BIT,
-                          data,
-                          data_size,
-                          100);
-        xSemaphoreGive(joint_mutex);
-    }
+static inline as5600_err_t as5600_bus_deinitialize(void* user)
+{
+    return AS5600_ERR_OK;
+}
+
+static inline as5600_err_t as5600_bus_write_data(void* user,
+                                                 uint8_t address,
+                                                 uint8_t const* data,
+                                                 size_t data_size)
+{
+    joint_config_t* config = (joint_config_t*)user;
+
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Write(config->as5600_i2c_bus,
+                      config->as5600_i2c_address << 1U,
+                      address,
+                      I2C_MEMADD_SIZE_8BIT,
+                      data,
+                      data_size,
+                      100);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
     return AS5600_ERR_OK;
 }
 
-static as5600_err_t as5600_bus_read_data(void* user,
-                                         uint8_t address,
-                                         uint8_t* data,
-                                         size_t data_size)
+static inline as5600_err_t as5600_bus_read_data(void* user,
+                                                uint8_t address,
+                                                uint8_t* data,
+                                                size_t data_size)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                         config->as5600_i2c_address << 1U,
-                         address,
-                         I2C_MEMADD_SIZE_8BIT,
-                         data,
-                         data_size,
-                         100);
-        xSemaphoreGive(joint_mutex);
-    }
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Read(config->as5600_i2c_bus,
+                     config->as5600_i2c_address << 1U,
+                     address,
+                     I2C_MEMADD_SIZE_8BIT,
+                     data,
+                     data_size,
+                     100);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
     return AS5600_ERR_OK;
 }
 
-static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
-                                           float32_t min_angle,
-                                           float32_t max_angle,
-                                           bool magnet_polarity)
+static inline as5600_err_t as5600_initialize_chip(as5600_t* as5600,
+                                                  float32_t min_angle,
+                                                  float32_t max_angle,
+                                                  bool magnet_polarity)
 {
     as5600_status_reg_t status;
     as5600_err_t err = as5600_get_status_reg(as5600, &status);
@@ -188,6 +244,13 @@ static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
 
     uint16_t min_raw = (uint16_t)(min_angle / angle_range * 4095.0F);
     uint16_t max_raw = (uint16_t)(max_angle / angle_range * 4095.0F);
+
+    ATLAS_LOG(TAG,
+              "AS5600 min angle: %f, max angle: %f, min raw: %u, max raw: %u",
+              min_angle,
+              max_angle,
+              min_raw,
+              max_raw);
 
     as5600_zpos_reg_t zpos = {.zpos = min_raw & 0x0FFF};
     err = as5600_set_zpos_reg(as5600, &zpos);
@@ -222,65 +285,95 @@ static as5600_err_t as5600_initialize_chip(as5600_t* as5600,
     return as5600_set_direction(as5600, (as5600_direction_t)magnet_polarity);
 }
 
-static ina226_err_t ina226_bus_write_data(void* user,
-                                          uint8_t address,
-                                          uint8_t const* data,
-                                          size_t data_size)
+static inline ina226_err_t ina226_bus_initialize(void* user)
+{
+    joint_config_t* config = (joint_config_t*)user;
+
+    return HAL_I2C_IsDeviceReady(config->ina226_i2c_bus,
+                                 config->ina226_i2c_address,
+                                 3U,
+                                 10U) == HAL_OK
+               ? INA226_ERR_OK
+               : INA226_ERR_FAIL;
+}
+
+static inline ina226_err_t ina226_bus_deinitialize(void* user)
+{
+    return INA226_ERR_OK;
+}
+
+static inline ina226_err_t ina226_bus_write_data(void* user,
+                                                 uint8_t address,
+                                                 uint8_t const* data,
+                                                 size_t data_size)
 {
     ATLAS_ASSERT(user && data);
 
     joint_config_t* config = (joint_config_t*)user;
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                          config->ina226_i2c_address << 1U,
-                          address,
-                          I2C_MEMADD_SIZE_8BIT,
-                          (uint8_t*)data,
-                          data_size,
-                          10);
-        xSemaphoreGive(joint_mutex);
-    }
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Write(config->ina226_i2c_bus,
+                      config->ina226_i2c_address << 1U,
+                      address,
+                      I2C_MEMADD_SIZE_8BIT,
+                      (uint8_t*)data,
+                      data_size,
+                      10);
+    //     xSemaphoreGive(joint_mutex);
+    // }
 
     return INA226_ERR_OK;
 }
 
-static ina226_err_t ina226_bus_read_data(void* user,
-                                         uint8_t address,
-                                         uint8_t* data,
-                                         size_t data_size)
+static inline ina226_err_t ina226_bus_read_data(void* user,
+                                                uint8_t address,
+                                                uint8_t* data,
+                                                size_t data_size)
 {
     ATLAS_ASSERT(user && data);
 
     joint_config_t* config = (joint_config_t*)user;
 
-    SemaphoreHandle_t joint_mutex = semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
+    // SemaphoreHandle_t joint_mutex =
+    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
 
-    if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-        HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                         config->ina226_i2c_address << 1U,
-                         address,
-                         I2C_MEMADD_SIZE_8BIT,
-                         data,
-                         data_size,
-                         10);
-        xSemaphoreGive(joint_mutex);
-    }
+    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
+    HAL_I2C_Mem_Read(config->ina226_i2c_bus,
+                     config->ina226_i2c_address << 1U,
+                     address,
+                     I2C_MEMADD_SIZE_8BIT,
+                     data,
+                     data_size,
+                     10);
+    // xSemaphoreGive(joint_mutex);
+    // }
 
     return INA226_ERR_OK;
 }
 
-static ina226_err_t ina226_initialize_chip(ina226_t* ina226,
-                                           float32_t min_current,
-                                           float32_t max_current)
+static inline ina226_err_t ina226_initialize_chip(ina226_t* ina226,
+                                                  float32_t min_current,
+                                                  float32_t max_current)
 {
     return INA226_ERR_OK;
 }
 
-static step_motor_err_t step_motor_device_set_frequency(void* user,
-                                                        uint32_t frequency)
+static inline step_motor_err_t step_motor_device_initialize(void* user)
+{
+    return STEP_MOTOR_ERR_OK;
+}
+
+static inline step_motor_err_t step_motor_device_deinitialize(void* user)
+{
+    return STEP_MOTOR_ERR_OK;
+}
+
+static inline step_motor_err_t step_motor_device_set_frequency(
+    void* user,
+    uint32_t frequency)
 {
     ATLAS_ASSERT(user);
 
@@ -291,7 +384,7 @@ static step_motor_err_t step_motor_device_set_frequency(void* user,
     return STEP_MOTOR_ERR_OK;
 }
 
-static step_motor_err_t step_motor_device_set_direction(
+static inline step_motor_err_t step_motor_device_set_direction(
     void* user,
     step_motor_direction_t direction)
 {
@@ -304,8 +397,18 @@ static step_motor_err_t step_motor_device_set_direction(
     return STEP_MOTOR_ERR_OK;
 }
 
-static motor_driver_err_t motor_driver_motor_set_speed(void* user,
-                                                       float32_t speed)
+static inline motor_driver_err_t motor_driver_motor_initialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_motor_deinitialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_motor_set_speed(void* user,
+                                                              float32_t speed)
 {
     ATLAS_ASSERT(user);
 
@@ -316,8 +419,19 @@ static motor_driver_err_t motor_driver_motor_set_speed(void* user,
     return MOTOR_DRIVER_ERR_OK;
 }
 
-static motor_driver_err_t motor_driver_encoder_get_position(void* user,
-                                                            float32_t* position)
+static inline motor_driver_err_t motor_driver_encoder_initialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_encoder_deinitialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_encoder_get_position(
+    void* user,
+    float32_t* position)
 {
     ATLAS_ASSERT(user && position);
 
@@ -328,7 +442,17 @@ static motor_driver_err_t motor_driver_encoder_get_position(void* user,
     return MOTOR_DRIVER_ERR_OK;
 }
 
-static motor_driver_err_t motor_driver_regulator_get_control(
+static inline motor_driver_err_t motor_driver_regulator_initialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_regulator_deinitialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_regulator_get_control(
     void* user,
     float32_t error,
     float32_t* control,
@@ -346,8 +470,19 @@ static motor_driver_err_t motor_driver_regulator_get_control(
     return MOTOR_DRIVER_ERR_OK;
 }
 
-static motor_driver_err_t motor_driver_fault_get_current(void* user,
-                                                         float32_t* current)
+static inline motor_driver_err_t motor_driver_fault_initialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_fault_deinitialize(void* user)
+{
+    return MOTOR_DRIVER_ERR_OK;
+}
+
+static inline motor_driver_err_t motor_driver_fault_get_current(
+    void* user,
+    float32_t* current)
 {
     ATLAS_ASSERT(user && current);
 
@@ -357,8 +492,6 @@ static motor_driver_err_t motor_driver_fault_get_current(void* user,
 
     return MOTOR_DRIVER_ERR_OK;
 }
-
-static char const* const TAG = "joint_manager";
 
 static inline bool joint_manager_has_joint_event(void)
 {
@@ -635,8 +768,12 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
         &(as5600_config_t){.max_angle = parameters->max_position,
                            .min_angle = parameters->min_position},
         &(as5600_interface_t){.gpio_user = &manager->config,
+                              .gpio_initialize = as5600_gpio_initialize,
+                              .gpio_deinitialize = as5600_gpio_deinitialize,
                               .gpio_write_pin = as5600_gpio_write_pin,
                               .bus_user = &manager->config,
+                              .bus_initialize = as5600_bus_initialize,
+                              .bus_deinitialize = as5600_bus_deinitialize,
                               .bus_read_data = as5600_bus_read_data,
                               .bus_write_data = as5600_bus_write_data});
 
@@ -649,6 +786,8 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
         &manager->a4988,
         &(a4988_config_t){},
         &(a4988_interface_t){.gpio_user = &manager->config,
+                             .gpio_initialize = a4988_gpio_initialize,
+                             .gpio_deinitialize = a4988_gpio_deinitialize,
                              .gpio_write_pin = a4988_gpio_write_pin,
                              .pwm_user = &manager->config,
                              .pwm_start = a4988_pwm_start,
@@ -664,6 +803,8 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
                                .step_change = parameters->step_change},
         &(step_motor_interface_t){
             .device_user = manager,
+            .device_initialize = step_motor_device_initialize,
+            .device_deinitialize = step_motor_device_deinitialize,
             .device_set_frequency = step_motor_device_set_frequency,
             .device_set_direction = step_motor_device_set_direction},
         0.0F);
@@ -690,12 +831,20 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
             .max_current = parameters->current_limit},
         &(motor_driver_interface_t){
             .motor_user = manager,
+            .motor_initialize = motor_driver_motor_initialize,
+            .motor_deinitialize = motor_driver_motor_deinitialize,
             .motor_set_speed = motor_driver_motor_set_speed,
             .encoder_user = manager,
+            .encoder_initialize = motor_driver_encoder_initialize,
+            .encoder_deinitialize = motor_driver_encoder_deinitialize,
             .encoder_get_position = motor_driver_encoder_get_position,
             .regulator_user = manager,
+            .regulator_initialize = motor_driver_regulator_initialize,
+            .regulator_deinitialize = motor_driver_regulator_deinitialize,
             .regulator_get_control = motor_driver_regulator_get_control,
             .fault_user = manager,
+            .fault_initialize = motor_driver_fault_initialize,
+            .fault_deinitialize = motor_driver_fault_deinitialize,
             .fault_get_current = motor_driver_fault_get_current});
 
     if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_READY)) {

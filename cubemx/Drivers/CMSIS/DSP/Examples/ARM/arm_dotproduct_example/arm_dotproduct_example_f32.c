@@ -162,6 +162,7 @@ int32_t main(void)
   diff = fabsf(refDotProdOut - testOutput);
 
   /* Comparison of dot product value with reference */
+
   if (diff > DELTA)
   {
     status = ARM_MATH_TEST_FAILURE;
