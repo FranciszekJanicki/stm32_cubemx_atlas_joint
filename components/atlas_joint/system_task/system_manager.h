@@ -11,10 +11,11 @@
 typedef struct {
     atlas_joint_num_t num;
     RTC_HandleTypeDef* timestamp_rtc;
-#ifdef PACKET_TEST
+#ifdef DELTA_TEST
     TIM_HandleTypeDef* delta_timer;
-    TIM_HandleTypeDef* packet_ready_timer;
 #endif
+    GPIO_TypeDef* delta_time_elapsed_gpio;
+    uint16_t delta_time_elapsed_pin;
 } system_config_t;
 
 typedef struct {

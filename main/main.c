@@ -13,11 +13,23 @@ static atlas_joint_config_t config = {
     .uart_ctx = {.uart_bus = LOG_UART_BUS},
     .system_ctx = {.config = {.num = JOINT_NUM,
                               .timestamp_rtc = TIMESTAMP_RTC,
-                              .packet_ready_timer = PACKET_READY_TIMER,
-                              .delta_timer = DELTA_TIMER}},
-    .packet_ctx = {.config = {.robot_packet_ready_gpio = PACKET_READY_GPIO,
-                              .robot_packet_ready_pin = PACKET_READY_PIN,
-                              .packet_spi = PACKET_SPI_BUS}},
+#ifdef DELTA_TEST
+                              .delta_timer = DELTA_TIMER,
+#endif
+                              .delta_time_elapsed_gpio =
+                                  DELTA_TIME_ELAPSED_GPIO,
+                              .delta_time_elapsed_pin =
+                                  DELTA_TIME_ELAPSED_PIN}},
+    .packet_ctx =
+        {.config = {.robot_packet_ready_gpio = ROBOT_PACKET_READY_GPIO,
+                    .robot_packet_ready_pin = ROBOT_PACKET_READY_PIN,
+                    .joint_packet_ready_gpio = JOINT_PACKET_READY_GPIO,
+                    .joint_packet_ready_pin = JOINT_PACKET_READY_PIN,
+                    .packet_spi_bus = PACKET_SPI_BUS,
+#ifdef PACKET_TEST
+                    .joint_packet_ready_timer = JOINT_PACKET_READY_TIMER
+#endif
+         }},
     .joint_ctx = {.config = {.a4988_pwm_timer = A4988_PWM_TIMER,
                              .a4988_pwm_channel = A4988_PWM_CHANNEL,
                              .a4988_dir_gpio = A4988_DIR_GPIO,
@@ -56,6 +68,7 @@ int main(void)
     MX_TIM2_Init();
     MX_TIM3_Init();
     MX_I2C1_Init();
+    MX_SPI1_Init();
     MX_RTC_Init();
 
     HAL_Delay(50);

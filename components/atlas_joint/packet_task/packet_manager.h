@@ -13,7 +13,13 @@ typedef struct {
     GPIO_TypeDef* robot_packet_ready_gpio;
     uint16_t robot_packet_ready_pin;
 
-    SPI_HandleTypeDef* packet_spi;
+    GPIO_TypeDef* joint_packet_ready_gpio;
+    uint16_t joint_packet_ready_pin;
+
+    SPI_HandleTypeDef* packet_spi_bus;
+#ifdef PACKET_TEST
+    TIM_HandleTypeDef* joint_packet_ready_timer;
+#endif
 } packet_config_t;
 
 typedef struct {

@@ -11,6 +11,91 @@
 
 static char const* const TAG = "system_manager";
 
+static inline bool system_manager_get_delta_time_elapsed_pin(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return (bool)HAL_GPIO_ReadPin(manager->config.delta_time_elapsed_gpio,
+                                  manager->config.delta_time_elapsed_pin);
+}
+
+static inline bool system_manager_set_rtc_timestamp(
+    system_manager_t* manager,
+    atlas_timestamp_t const* timestamp)
+{
+    ATLAS_ASSERT(manager && timestamp);
+
+    RTC_TimeTypeDef rtc_time;
+
+    rtc_time.Hours = timestamp->hour;
+    rtc_time.Minutes = timestamp->minute;
+    rtc_time.Seconds = timestamp->second;
+
+    if (HAL_RTC_SetTime(manager->config.timestamp_rtc,
+                        &rtc_time,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    RTC_DateTypeDef rtc_date;
+
+    rtc_date.Year = timestamp->year;
+    rtc_date.Month = timestamp->month;
+    rtc_date.Date = timestamp->day;
+
+    if (HAL_RTC_SetDate(manager->config.timestamp_rtc,
+                        &rtc_date,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    return true;
+}
+
+static inline bool system_manager_get_rtc_timestamp(
+    system_manager_t* manager,
+    atlas_timestamp_t* timestamp)
+{
+    ATLAS_ASSERT(manager && timestamp);
+
+    RTC_TimeTypeDef rtc_time;
+    if (HAL_RTC_SetTime(manager->config.timestamp_rtc,
+                        &rtc_time,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    timestamp->hour = rtc_time.Hours;
+    timestamp->minute = rtc_time.Minutes;
+    timestamp->second = rtc_time.Seconds;
+
+    RTC_DateTypeDef rtc_date;
+    if (HAL_RTC_SetDate(manager->config.timestamp_rtc,
+                        &rtc_date,
+                        RTC_FORMAT_BIN) != HAL_OK) {
+        return false;
+    }
+
+    timestamp->year = rtc_date.Year;
+    timestamp->month = rtc_date.Month;
+    timestamp->day = rtc_date.Date;
+
+    return true;
+}
+
+static inline bool system_manager_start_retry_timer(void)
+{
+    return xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM),
+                       pdMS_TO_TICKS(1)) == pdPASS;
+}
+
+static inline bool system_manager_stop_retry_timer(void)
+{
+    return xTimerStop(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
+           pdPASS;
+}
+
 static inline bool system_manager_has_system_event(void)
 {
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM));
@@ -69,41 +154,6 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static inline bool system_manager_start_retry_timer(void)
-{
-    return xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM),
-                       pdMS_TO_TICKS(1)) == pdPASS;
-}
-
-static inline bool system_manager_stop_retry_timer(void)
-{
-    return xTimerStop(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
-           pdPASS;
-}
-
-static inline bool system_manager_get_rtc_timestamp(
-    system_manager_t* manager,
-    atlas_timestamp_t* timestamp)
-{
-    ATLAS_ASSERT(manager && timestamp);
-
-    RTC_TimeTypeDef rtc_time;
-    if (HAL_RTC_GetTime(manager->config.timestamp_rtc,
-                        &rtc_time,
-                        RTC_FORMAT_BIN) != HAL_OK) {
-        return false;
-    }
-
-    RTC_DateTypeDef rtc_date;
-    if (HAL_RTC_GetDate(manager->config.timestamp_rtc,
-                        &rtc_date,
-                        RTC_FORMAT_BIN) != HAL_OK) {
-        return false;
-    }
-
-    return true;
-}
-
 static atlas_err_t system_manager_notify_retry_timer_handler(
     system_manager_t* manager)
 {
@@ -154,10 +204,6 @@ static atlas_err_t system_manager_notify_packet_ready_handler(
     }
 
     manager->is_packet_running = true;
-
-#ifdef PACKET_TEST
-    HAL_TIM_Base_Start_IT(manager->config.packet_ready_timer);
-#endif
 
     return ATLAS_ERR_OK;
 }
@@ -251,7 +297,7 @@ static atlas_err_t system_manager_event_joint_start_handler(
     system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
     atlas_timestamp_print(&manager->start_timestamp);
 
-#ifdef PACKET_TEST
+#ifdef DELTA_TEST
     HAL_TIM_Base_Start_IT(manager->config.delta_timer);
 #endif
 
@@ -400,9 +446,11 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     manager->is_joint_running = false;
     manager->config = *config;
 
+#ifdef USE_UART_TASK
     if (!system_manager_send_uart_notify(UART_NOTIFY_START)) {
         return ATLAS_ERR_FAIL;
     }
+#endif
 
     return ATLAS_ERR_OK;
 }

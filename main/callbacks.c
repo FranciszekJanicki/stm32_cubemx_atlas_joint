@@ -10,10 +10,14 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
 {
     if (htim->Instance == TIM4) {
         HAL_IncTick();
-    } else if (htim->Instance == TIM1) {
+    }
+#ifdef DELTA_TEST
+    else if (htim->Instance == TIM1) {
         joint_task_delta_timer_callback();
+    }
+#endif
 #ifdef PACKET_TEST
-    } else if (htim->Instance == TIM3) {
+    else if (htim->Instance == TIM3) {
         packet_task_joint_packet_ready_callback();
     }
 #endif

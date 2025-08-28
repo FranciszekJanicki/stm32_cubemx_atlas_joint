@@ -71,10 +71,14 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
+    queue_manager_set(QUEUE_TYPE_JOINT, joint_queue);
+
     SemaphoreHandle_t joint_mutex = joint_task_create_mutex();
     if (joint_mutex == NULL) {
         return ATLAS_ERR_FAIL;
     }
+
+    semaphore_manager_set(SEMAPHORE_TYPE_JOINT, joint_mutex);
 
     TaskHandle_t joint_task = joint_task_create_task(task_ctx);
     if (joint_task == NULL) {
@@ -82,8 +86,6 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
     }
 
     task_manager_set(TASK_TYPE_JOINT, joint_task);
-    queue_manager_set(QUEUE_TYPE_JOINT, joint_queue);
-    semaphore_manager_set(SEMAPHORE_TYPE_JOINT, joint_mutex);
 
     return ATLAS_ERR_OK;
 }

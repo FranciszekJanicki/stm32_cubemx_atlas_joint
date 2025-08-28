@@ -62,12 +62,13 @@ atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
+    queue_manager_set(QUEUE_TYPE_PACKET, packet_queue);
+
     TaskHandle_t packet_task = packet_task_create_task(task_ctx);
     if (packet_task == NULL) {
         return ATLAS_ERR_FAIL;
     }
 
-    queue_manager_set(QUEUE_TYPE_PACKET, packet_queue);
     task_manager_set(TASK_TYPE_PACKET, packet_task);
 
     return ATLAS_ERR_OK;

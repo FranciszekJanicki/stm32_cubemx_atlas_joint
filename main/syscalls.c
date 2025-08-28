@@ -52,13 +52,12 @@ int _write(int file, char* ptr, int len)
 #else
     SemaphoreHandle_t uart_mutex = semaphore_manager_get(SEMAPHORE_TYPE_UART);
 
-    size_t written = 0U;
-    if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(len))) {
-        written = HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
+    if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(10))) {
+        HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
         xSemaphoreGive(uart_mutex);
     }
 
-    return written;
+    return len;
 #endif
 }
 

@@ -7,6 +7,6 @@
 #include "notify.h"
 
 #define PACKET_TEST
-#define USE_UART_TASK
+#define DELTA_TEST
 
 #endif // COMMON_COMMON_H

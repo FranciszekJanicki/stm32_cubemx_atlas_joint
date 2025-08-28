@@ -7,6 +7,7 @@
 #include "stm32l4xx_hal.h"
 #include "task.h"
 #include <stdint.h>
+#include <string.h>
 
 static char const* const TAG = "packet_manager";
 
@@ -56,12 +57,10 @@ static inline bool packet_manager_packet_spi_transmit_data(
 {
     ATLAS_ASSERT(manager && data);
 
-    if (!manager->config.packet_spi) {
-        return false;
-    }
-
-    return HAL_SPI_Transmit(manager->config.packet_spi, data, data_size, 100) ==
-           HAL_OK;
+    return HAL_SPI_Transmit(manager->config.packet_spi_bus,
+                            data,
+                            data_size,
+                            100) == HAL_OK;
 }
 
 static inline bool packet_manager_packet_spi_receive_data(
@@ -71,12 +70,10 @@ static inline bool packet_manager_packet_spi_receive_data(
 {
     ATLAS_ASSERT(manager && data);
 
-    if (!manager->config.packet_spi) {
-        return false;
-    }
-
-    return HAL_SPI_Receive(manager->config.packet_spi, data, data_size, 100) ==
-           HAL_OK;
+    return HAL_SPI_Receive(manager->config.packet_spi_bus,
+                           data,
+                           data_size,
+                           100) == HAL_OK;
 }
 
 static inline void packet_manager_set_robot_packet_ready_pin(
@@ -97,6 +94,7 @@ static inline bool packet_manager_send_robot_packet(
     ATLAS_ASSERT(manager && packet);
 
     uint8_t buffer[ATLAS_ROBOT_PACKET_SIZE];
+    memset(buffer, 0, sizeof(buffer));
 
     atlas_checksum_t checksum;
     atlas_checksum_encode(&checksum, (uint8_t (*)[ATLAS_CHECKSUM_SIZE])buffer);
@@ -121,6 +119,8 @@ static inline bool packet_manager_receive_joint_packet(
     ATLAS_ASSERT(manager && packet);
 
     uint8_t buffer[ATLAS_JOINT_PACKET_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+
     bool result =
         packet_manager_packet_spi_receive_data(manager, buffer, sizeof(buffer));
 
@@ -286,6 +286,10 @@ static atlas_err_t packet_manager_event_start_handler(
 
     manager->is_running = true;
 
+#ifdef PACKET_TEST
+    HAL_TIM_Base_Start_IT(manager->config.joint_packet_ready_timer);
+#endif
+
     return ATLAS_ERR_OK;
 }
 
@@ -322,11 +326,7 @@ static atlas_err_t packet_manager_event_joint_measure_handler(
     packet.timestamp = joint_measure->timestamp;
     packet.payload.joint_measure = joint_measure->measure;
 
-#ifdef PACKET_TEST
-    ATLAS_LOG(TAG,
-              "position measured: %f",
-              packet.payload.joint_measure.position);
-#else
+#ifndef PACKET_TEST
     if (!packet_manager_send_robot_packet(manager, &packet)) {
         return ATLAS_ERR_FAIL;
     }

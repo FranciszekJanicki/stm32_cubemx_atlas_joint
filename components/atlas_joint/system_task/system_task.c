@@ -90,19 +90,21 @@ atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
+    queue_manager_set(QUEUE_TYPE_SYSTEM, system_queue);
+
     TimerHandle_t system_timer = system_task_create_timer();
     if (system_timer == NULL) {
         return ATLAS_ERR_FAIL;
     }
+
+    timer_manager_set(TIMER_TYPE_SYSTEM, system_timer);
 
     TaskHandle_t system_task = system_task_create_task(task_ctx);
     if (system_task == NULL) {
         return ATLAS_ERR_FAIL;
     }
 
-    queue_manager_set(QUEUE_TYPE_SYSTEM, system_queue);
     task_manager_set(TASK_TYPE_SYSTEM, system_task);
-    timer_manager_set(TIMER_TYPE_SYSTEM, system_timer);
 
     return ATLAS_ERR_OK;
 }

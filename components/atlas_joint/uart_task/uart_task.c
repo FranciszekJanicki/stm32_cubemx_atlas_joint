@@ -30,6 +30,7 @@ atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
+#ifdef USE_UART_TASK
     static StaticStreamBuffer_t uart_stream_buffer_buffer;
     static uint8_t uart_stream_buffer_storage[UART_STREAM_BUFFER_STORAGE_SIZE];
 
@@ -42,7 +43,8 @@ atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
-#ifdef USE_UART_TASK
+    stream_buffer_manager_set(STREAM_BUFFER_TYPE_UART, uart_stream_buffer);
+
     static StaticTask_t uart_task_buffer;
     static StackType_t uart_task_stack[UART_TASK_STACK_DEPTH];
     static uint8_t uart_buffer[UART_BUFFER_STORAGE_SIZE];
@@ -64,6 +66,8 @@ atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
     if (uart_task == NULL) {
         return ATLAS_ERR_FAIL;
     }
+
+    task_manager_set(TASK_TYPE_UART, uart_task);
 #endif
 
     static StaticSemaphore_t uart_mutex_buffer;
@@ -74,11 +78,8 @@ atlas_err_t uart_task_initialize(uart_task_ctx_t* task_ctx)
         return ATLAS_ERR_FAIL;
     }
 
-    stream_buffer_manager_set(STREAM_BUFFER_TYPE_UART, uart_stream_buffer);
     semaphore_manager_set(SEMAPHORE_TYPE_UART, uart_mutex);
-#ifdef USE_UART_TASK
-    task_manager_set(TASK_TYPE_UART, uart_task);
-#endif
+
     return ATLAS_ERR_OK;
 }
 

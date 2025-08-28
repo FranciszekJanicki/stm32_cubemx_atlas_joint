@@ -189,14 +189,22 @@
 
 #define TIMESTAMP_RTC (&hrtc)
 
-#define PACKET_SPI_BUS (NULL)
-#define PACKET_READY_GPIO NULL
-#define PACKET_READY_PIN (1U << 0U)
+#define PACKET_SPI_BUS (&hspi1)
+#define JOINT_PACKET_READY_GPIO (NULL)
+#define JOINT_PACKET_READY_PIN (1U << 0U)
+#define ROBOT_PACKET_READY_GPIO (NULL)
+#define ROBOT_PACKET_READY_PIN (1U << 0U)
 
 #ifdef PACKET_TEST
-#define PACKET_READY_TIMER (&htim3)
+#define JOINT_PACKET_READY_TIMER (&htim3)
+#endif
+
+#ifdef DELTA_TEST
 #define DELTA_TIMER (&htim1)
 #endif
+
+#define DELTA_TIME_ELAPSED_GPIO (NULL)
+#define DELTA_TIME_ELAPSED_PIN (1U << 0U)
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)
