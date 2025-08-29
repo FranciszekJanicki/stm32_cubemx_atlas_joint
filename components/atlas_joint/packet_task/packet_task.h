@@ -2,8 +2,8 @@
 #define PACKET_TASK_PACKET_TASK_H
 
 #include "packet_manager.h"
-#include "stm32l476xx.h"
-#include "stm32l4xx_hal.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
 #include <stdint.h>
 
 typedef struct {

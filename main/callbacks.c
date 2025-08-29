@@ -1,8 +1,8 @@
 #include "FreeRTOS.h"
 #include "atlas_joint.h"
 #include "common.h"
-#include "stm32l476xx.h"
-#include "stm32l4xx_hal.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
 #include "uart_task.h"
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(

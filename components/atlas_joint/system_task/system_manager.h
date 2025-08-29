@@ -3,8 +3,8 @@
 
 #include "FreeRTOS.h"
 #include "common.h"
-#include "stm32l476xx.h"
-#include "stm32l4xx_hal.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
 #include <stdbool.h>
 #include <stdint.h>
 

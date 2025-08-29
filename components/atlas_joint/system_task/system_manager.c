@@ -2,9 +2,9 @@
 #include "FreeRTOS.h"
 #include "common.h"
 #include "queue.h"
-#include "stm32l476xx.h"
-#include "stm32l4xx_hal.h"
-#include "stm32l4xx_hal_rtc.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_rtc.h"
 #include "task.h"
 #include <stdint.h>
 #include <string.h>

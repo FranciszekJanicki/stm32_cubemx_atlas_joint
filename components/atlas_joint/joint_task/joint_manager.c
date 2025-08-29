@@ -8,7 +8,7 @@
 #include "notify.h"
 #include "pid_regulator.h"
 #include "step_motor.h"
-#include "stm32l4xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "task.h"
 #include <assert.h>
 #include <stdint.h>

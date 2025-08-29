@@ -3,7 +3,7 @@
 
 #include "bus_task.h"
 #include "common.h"
-#include "stm32l4xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 typedef struct {
     UART_HandleTypeDef* uart_bus;

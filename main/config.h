@@ -208,8 +208,8 @@
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)
-#define AS5600_DIR_GPIO GPIOC
-#define AS5600_DIR_PIN (1U << 2U)
+#define AS5600_DIR_GPIO GPIOA
+#define AS5600_DIR_PIN (1U << 10U)
 
 #define INA226_I2C_BUS (&hi2c1)
 #define INA226_I2C_ADDRESS (0x40U)
