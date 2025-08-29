@@ -8,7 +8,7 @@ enable_language(C ASM)
 
 target_compile_definitions(stm32cubemx INTERFACE 
 	USE_HAL_DRIVER 
-	STM32F401xC
+	STM32F411xE
     $<$<CONFIG:Debug>:DEBUG>
 )
 
@@ -69,7 +69,7 @@ target_sources(stm32cubemx INTERFACE
     ../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
     # ../../Core/Src/sysmem.c
     # ../../Core/Src/syscalls.c
-    ../../startup_stm32f401xc.s
+    ../../startup_stm32f411xe.s
 )
 
 target_link_directories(stm32cubemx INTERFACE
