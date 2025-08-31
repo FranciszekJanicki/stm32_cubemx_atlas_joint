@@ -1,19 +1,19 @@
-add_library(uart_task STATIC)
+add_library(log_task STATIC)
 
-target_sources(uart_task PRIVATE 
-    uart_task.c
+target_sources(log_task PRIVATE 
+    log_task.c
 )  
 
-target_include_directories(uart_task PUBLIC
+target_include_directories(log_task PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(uart_task PUBLIC 
+target_link_libraries(log_task PUBLIC 
     bus_task
     common
 )
 
-target_compile_options(uart_task PUBLIC
+target_compile_options(log_task PUBLIC
     -std=c23
     -Wall
     -Wextra

@@ -185,7 +185,9 @@
 #error "Unsupported JOINT_NUM selected!"
 #endif
 
+
 #define LOG_UART_BUS (&huart2)
+#define LOG_USB_BUS (NULL)
 
 #define TIMESTAMP_RTC (&hrtc)
 

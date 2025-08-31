@@ -13,7 +13,7 @@ typedef enum {
     TASK_TYPE_SYSTEM,
     TASK_TYPE_JOINT,
     TASK_TYPE_PACKET,
-    TASK_TYPE_UART,
+    TASK_TYPE_LOG,
     TASK_TYPE_NUM,
 } TaskType_t;
 
@@ -25,12 +25,12 @@ typedef enum {
 } QueueType_t;
 
 typedef enum {
-    STREAM_BUFFER_TYPE_UART,
+    STREAM_BUFFER_TYPE_LOG,
     STREAM_BUFFER_TYPE_NUM,
 } StreamBufferType_t;
 
 typedef enum {
-    SEMAPHORE_TYPE_UART,
+    SEMAPHORE_TYPE_LOG,
     SEMAPHORE_TYPE_JOINT,
     SEMAPHORE_TYPE_NUM,
 } SemaphoreType_t;

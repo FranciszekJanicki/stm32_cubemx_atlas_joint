@@ -8,5 +8,6 @@
 
 #define PACKET_TEST
 #define DELTA_TEST
+#define LOG_VIA_USB
 
 #endif // COMMON_COMMON_H

@@ -3,6 +3,8 @@
 #include "semphr.h"
 #include "stream_buffer.h"
 #include "usart.h"
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
 #include <errno.h>
 #include <signal.h>
 #include <stdint.h>
@@ -44,17 +46,21 @@ int _read(int file, char* ptr, int len)
 
 int _write(int file, char* ptr, int len)
 {
-#ifdef USE_UART_TASK
-    StreamBufferHandle_t uart_stream_buffer =
-        stream_buffer_manager_get(STREAM_BUFFER_TYPE_UART);
+#ifdef USE_LOG_TASK
+    StreamBufferHandle_t log_stream_buffer =
+        stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
 
-    return xStreamBufferSend(uart_stream_buffer, ptr, len, len);
+    return xStreamBufferSend(log_stream_buffer, ptr, len, len);
 #else
-    SemaphoreHandle_t uart_mutex = semaphore_manager_get(SEMAPHORE_TYPE_UART);
+    SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
 
-    if (xSemaphoreTake(uart_mutex, pdMS_TO_TICKS(10))) {
+    if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(10))) {
+#ifdef LOG_VIA_UART
         HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
-        xSemaphoreGive(uart_mutex);
+#else
+        CDC_Transmit_FS((uint8_t*)ptr, len);
+#endif
+        xSemaphoreGive(log_mutex);
     }
 
     return len;

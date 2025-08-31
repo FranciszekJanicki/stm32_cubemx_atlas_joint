@@ -136,6 +136,13 @@ static inline a4988_err_t a4988_pwm_set_frequency(void* user,
                               config->a4988_pwm_channel,
                               compare);
         __HAL_TIM_ENABLE(config->a4988_pwm_timer);
+
+        ATLAS_LOG(TAG,
+                  "frequency: %u, period: %u, prescaler: %u, compare: %u",
+                  frequency,
+                  period,
+                  prescaler,
+                  compare);
     }
 
     return A4988_ERR_OK;

@@ -2,7 +2,7 @@ add_subdirectory(common)
 add_subdirectory(system_task)
 add_subdirectory(joint_task)
 add_subdirectory(packet_task)
-add_subdirectory(uart_task)
+add_subdirectory(log_task)
 
 add_library(atlas_joint STATIC)
 
@@ -18,7 +18,7 @@ target_link_libraries(atlas_joint PUBLIC
     common
     system_task
     joint_task
-    uart_task
+    log_task
     packet_task
     stm32cubemx
 )

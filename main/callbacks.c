@@ -1,9 +1,9 @@
 #include "FreeRTOS.h"
 #include "atlas_joint.h"
 #include "common.h"
+#include "log_task.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
-#include "uart_task.h"
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
@@ -42,7 +42,9 @@ __attribute__((used)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 __attribute__((used)) void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
+#ifdef LOG_VIA_UART
     if (huart->Instance == USART2) {
-        uart_task_transmit_done_callback();
+        log_task_transmit_done_callback();
     }
+#endif
 }
