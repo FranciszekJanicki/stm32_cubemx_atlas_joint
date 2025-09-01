@@ -1,14 +1,17 @@
 #include "main.h"
 #include "atlas_joint.h"
 #include "config.h"
+#include "crc.h"
 #include "gpio.h"
 #include "i2c.h"
+#include "iwdg.h"
 #include "main.h"
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "usb_device.h"
+#include "wwdg.h"
 
 static atlas_joint_config_t config = {
     .log_ctx =
@@ -71,28 +74,22 @@ int main(void)
     SystemClock_Config();
 
     MX_GPIO_Init();
-    // #ifdef LOG_VIA_UART
-    //     MX_USART2_UART_Init();
-    // #else
-    //     MX_USB_DEVICE_Init();
-    // #endif
-    // MX_TIM1_Init();
+#ifdef LOG_VIA_UART
+    MX_USART2_UART_Init();
+#else
+    MX_USB_DEVICE_Init();
+#endif
+    MX_TIM1_Init();
     MX_TIM2_Init();
-    // MX_TIM3_Init();
-    // MX_I2C1_Init();
-    // MX_SPI1_Init();
-    // MX_RTC_Init();
+    MX_TIM3_Init();
+    MX_I2C1_Init();
+    MX_SPI1_Init();
+    MX_RTC_Init();
+    MX_CRC_Init();
+    MX_IWDG_Init();
+    MX_WWDG_Init();
 
-    HAL_Delay(500);
+    HAL_Delay(500U);
 
-    // HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-
-    // __HAL_TIM_SET_AUTORELOAD(&htim2, 10000U);
-    // __HAL_TIM_SET_PRESCALER(&htim2, 0U);
-    // __HAL_TIM_SET_COUNTER(&htim2, 0U);
-    // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 10000U);
-
-    HAL_GPIO_WritePin(GPIOA, 1 << 0, 0);
-
-    // atlas_joint_initialize(&config);
+    atlas_joint_initialize(&config);
 }

@@ -1,9 +1,11 @@
 #include "FreeRTOS.h"
 #include "atlas_joint.h"
 #include "common.h"
+#include "iwdg.h"
 #include "log_task.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include "wwdg.h"
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
@@ -47,4 +49,12 @@ __attribute__((used)) void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
         log_task_transmit_done_callback();
     }
 #endif
+}
+
+__attribute__((used)) void HAL_WWDG_EarlyWakeupCallback(
+    WWDG_HandleTypeDef* hwwdg)
+{
+    if (hwwdg->Instance == WWDG) {
+        HAL_IWDG_Refresh(&hiwdg);
+    }
 }

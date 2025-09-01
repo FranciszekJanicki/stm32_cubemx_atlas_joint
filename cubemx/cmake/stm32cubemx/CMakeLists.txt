@@ -31,11 +31,14 @@ target_sources(stm32cubemx INTERFACE
     ../../Core/Src/main.c
     ../../Core/Src/gpio.c
     ../../Core/Src/freertos.c
+    ../../Core/Src/crc.c
     ../../Core/Src/i2c.c
+    ../../Core/Src/iwdg.c
     ../../Core/Src/rtc.c
     ../../Core/Src/spi.c
     ../../Core/Src/tim.c
     ../../Core/Src/usart.c
+    ../../Core/Src/wwdg.c
     ../../Core/Src/stm32f4xx_it.c
     ../../Core/Src/stm32f4xx_hal_msp.c
     ../../Core/Src/stm32f4xx_hal_timebase_tim.c
@@ -61,12 +64,15 @@ target_sources(stm32cubemx INTERFACE
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_iwdg.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rtc_ex.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
     ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_wwdg.c
     ../../Core/Src/system_stm32f4xx.c
     ../../Middlewares/Third_Party/FreeRTOS/Source/croutine.c
     ../../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
@@ -82,8 +88,6 @@ target_sources(stm32cubemx INTERFACE
     ../../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
     ../../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
     ../../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
-    # ../../Core/Src/sysmem.c
-    # ../../Core/Src/syscalls.c
     ../../startup_stm32f411xe.s
 )
 

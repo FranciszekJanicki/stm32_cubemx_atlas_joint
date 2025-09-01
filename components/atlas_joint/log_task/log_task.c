@@ -6,6 +6,7 @@
 #include "stream_buffer.h"
 #include "task.h"
 #include "usart.h"
+#include "usbd_cdc_if.h"
 
 #define LOG_TASK_STACK_DEPTH (4096U / sizeof(StackType_t))
 #define LOG_TASK_PRIORITY (1U)
@@ -25,9 +26,10 @@ static bus_err_t bus_task_bus_transmit_data(void* user,
     if (HAL_UART_Transmit_IT(uart_bus, data, data_size) != HAL_OK) {
         return BUS_ERR_TRANSMIT;
     }
-
 #else
-
+    if (CDC_Transmit_FS(data, data_size) != 0) {
+        return BUS_ERR_TRANSMIT;
+    }
 #endif
     return BUS_ERR_OK;
 }

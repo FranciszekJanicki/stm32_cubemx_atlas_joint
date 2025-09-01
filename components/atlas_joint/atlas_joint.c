@@ -1,9 +1,9 @@
 #include "atlas_joint.h"
 #include "joint_task.h"
+#include "log_task.h"
 #include "packet_task.h"
 #include "system_task.h"
 #include "task.h"
-#include "log_task.h"
 #include <string.h>
 
 void atlas_joint_initialize(atlas_joint_config_t const* config)
