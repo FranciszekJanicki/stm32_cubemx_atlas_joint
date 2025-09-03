@@ -57,6 +57,16 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define JOINT_DATA_READY_PIN_Pin GPIO_PIN_12
+#define JOINT_DATA_READY_PIN_GPIO_Port GPIOB
+#define JOINT_DELTA_TIMER_PIN_Pin GPIO_PIN_13
+#define JOINT_DELTA_TIMER_PIN_GPIO_Port GPIOB
+#define JOINT_CHIP_SELECT_PIN_Pin GPIO_PIN_14
+#define JOINT_CHIP_SELECT_PIN_GPIO_Port GPIOB
+#define DRV8825_DIR_PIN_Pin GPIO_PIN_9
+#define DRV8825_DIR_PIN_GPIO_Port GPIOA
+#define AS5600_DIR_PIN_Pin GPIO_PIN_10
+#define AS5600_DIR_PIN_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

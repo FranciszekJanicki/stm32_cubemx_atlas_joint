@@ -25,22 +25,19 @@ static atlas_joint_config_t config = {
     .system_ctx = {.config = {.num = JOINT_NUM,
                               .timestamp_rtc = TIMESTAMP_RTC,
 #ifdef DELTA_TEST
-                              .delta_timer = DELTA_TIMER,
+                              .delta_timer = JOINT_DELTA_TIMER,
 #endif
-                              .delta_time_elapsed_gpio =
-                                  DELTA_TIME_ELAPSED_GPIO,
-                              .delta_time_elapsed_pin =
-                                  DELTA_TIME_ELAPSED_PIN}},
-    .packet_ctx =
-        {.config = {.robot_packet_ready_gpio = ROBOT_PACKET_READY_GPIO,
-                    .robot_packet_ready_pin = ROBOT_PACKET_READY_PIN,
-                    .joint_packet_ready_gpio = JOINT_PACKET_READY_GPIO,
-                    .joint_packet_ready_pin = JOINT_PACKET_READY_PIN,
-                    .packet_spi_bus = PACKET_SPI_BUS,
+                              .delta_timer_gpio = JOINT_DELTA_TIMER_GPIO,
+                              .delta_timer_pin = JOINT_DELTA_TIMER_PIN}},
+    .packet_ctx = {.config = {.data_ready_gpio = JOINT_DATA_READY_GPIO,
+                              .data_ready_pin = JOINT_DATA_READY_PIN,
+                              .chip_select_gpio = JOINT_CHIP_SELECT_GPIO,
+                              .chip_select_pin = JOINT_CHIP_SELECT_PIN,
+                              .packet_spi_bus = PACKET_SPI_BUS,
 #ifdef PACKET_TEST
-                    .joint_packet_ready_timer = JOINT_PACKET_READY_TIMER
+                              .chip_select_timer = JOINT_CHIP_SELECT_TIMER
 #endif
-         }},
+                   }},
     .joint_ctx = {.config = {.a4988_pwm_timer = A4988_PWM_TIMER,
                              .a4988_pwm_channel = A4988_PWM_CHANNEL,
                              .a4988_dir_gpio = A4988_DIR_GPIO,

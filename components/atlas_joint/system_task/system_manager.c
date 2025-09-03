@@ -11,13 +11,12 @@
 
 static char const* const TAG = "system_manager";
 
-static inline bool system_manager_get_delta_time_elapsed_pin(
-    system_manager_t* manager)
+static inline bool system_manager_get_delta_timer_pin(system_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
 
-    return (bool)HAL_GPIO_ReadPin(manager->config.delta_time_elapsed_gpio,
-                                  manager->config.delta_time_elapsed_pin);
+    return (bool)HAL_GPIO_ReadPin(manager->config.delta_timer_gpio,
+                                  manager->config.delta_timer_pin);
 }
 
 static inline bool system_manager_set_rtc_timestamp(

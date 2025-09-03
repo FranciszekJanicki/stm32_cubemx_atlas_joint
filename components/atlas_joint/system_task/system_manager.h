@@ -14,8 +14,8 @@ typedef struct {
 #ifdef DELTA_TEST
     TIM_HandleTypeDef* delta_timer;
 #endif
-    GPIO_TypeDef* delta_time_elapsed_gpio;
-    uint16_t delta_time_elapsed_pin;
+    GPIO_TypeDef* delta_timer_gpio;
+    uint16_t delta_timer_pin;
 } system_config_t;
 
 typedef struct {
