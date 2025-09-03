@@ -29,13 +29,14 @@ static atlas_joint_config_t config = {
 #endif
                               .delta_timer_gpio = JOINT_DELTA_TIMER_GPIO,
                               .delta_timer_pin = JOINT_DELTA_TIMER_PIN}},
-    .packet_ctx = {.config = {.data_ready_gpio = JOINT_DATA_READY_GPIO,
-                              .data_ready_pin = JOINT_DATA_READY_PIN,
-                              .chip_select_gpio = JOINT_CHIP_SELECT_GPIO,
-                              .chip_select_pin = JOINT_CHIP_SELECT_PIN,
+    .packet_ctx = {.config = {.robot_packet_ready_gpio = JOINT_DATA_READY_GPIO,
+                              .robot_packet_ready_pin = JOINT_DATA_READY_PIN,
+                              .joint_packet_ready_gpio = JOINT_CHIP_SELECT_GPIO,
+                              .joint_packet_ready_pin = JOINT_CHIP_SELECT_PIN,
                               .packet_spi_bus = PACKET_SPI_BUS,
 #ifdef PACKET_TEST
-                              .chip_select_timer = JOINT_CHIP_SELECT_TIMER
+                              .joint_packet_ready_timer =
+                                  JOINT_CHIP_SELECT_TIMER
 #endif
                    }},
     .joint_ctx = {.config = {.a4988_pwm_timer = A4988_PWM_TIMER,
@@ -83,8 +84,8 @@ int main(void)
     MX_SPI1_Init();
     MX_RTC_Init();
     MX_CRC_Init();
-    MX_IWDG_Init();
-    MX_WWDG_Init();
+    // MX_IWDG_Init();
+    // MX_WWDG_Init();
 
     HAL_Delay(500U);
 

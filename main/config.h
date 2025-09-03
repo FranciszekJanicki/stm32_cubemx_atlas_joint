@@ -185,10 +185,29 @@
 #error "Unsupported JOINT_NUM selected!"
 #endif
 
+extern RTC_HandleTypeDef hrtc;
+extern IWDG_HandleTypeDef hiwdg;
+extern WWDG_HandleTypeDef hwwdg;
+extern I2C_HandleTypeDef hi2c1;
+extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim5;
+extern UART_HandleTypeDef huart2;
+
+#ifdef LOG_VIA_UART
 #define LOG_UART_BUS (&huart2)
+#else
 #define LOG_USB_BUS (NULL)
+#endif
 
 #define TIMESTAMP_RTC (&hrtc)
+
+#define SYSTICK_TIMER (&htim4)
+
+#define UPDATE_TIMER (&htim5)
 
 #define PACKET_SPI_BUS (&hspi1)
 
@@ -211,15 +230,21 @@
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)
-#define AS5600_DIR_GPIO GPIOA
+
+#define AS5600_DIR_GPIO (GPIOA)
 #define AS5600_DIR_PIN (1U << 10U)
 
 #define INA226_I2C_BUS (&hi2c1)
 #define INA226_I2C_ADDRESS (0x40U)
 
 #define A4988_PWM_TIMER (&htim2)
-#define A4988_PWM_CHANNEL TIM_CHANNEL_1
-#define A4988_DIR_GPIO GPIOA
+#define A4988_PWM_CHANNEL (TIM_CHANNEL_1)
+
+#define A4988_DIR_GPIO (GPIOA)
 #define A4988_DIR_PIN (1U << 9U)
+
+#define WINDOW_WATCHDOG (&hwwdg)
+
+#define INDEPENDENT_WATCHDOG (&hiwdg)
 
 #endif // MAIN_CONFIG_H

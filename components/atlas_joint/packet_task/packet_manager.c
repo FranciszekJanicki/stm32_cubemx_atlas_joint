@@ -75,14 +75,25 @@ static inline bool packet_manager_packet_spi_receive_data(
                            100) == HAL_OK;
 }
 
-static inline void packet_manager_set_data_ready_pin(packet_manager_t* manager,
-                                                     bool state)
+static inline void packet_manager_set_robot_packet_ready_pin(
+    packet_manager_t* manager,
+    bool state)
 {
     ATLAS_ASSERT(manager);
 
-    HAL_GPIO_WritePin(manager->config.data_ready_gpio,
-                      manager->config.data_ready_pin,
+    HAL_GPIO_WritePin(manager->config.robot_packet_ready_gpio,
+                      manager->config.robot_packet_ready_pin,
                       (GPIO_PinState)state);
+}
+
+static inline bool packet_manager_get_joint_packet_ready_pin(
+    packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return (GPIO_PinState)HAL_GPIO_ReadPin(
+        manager->config.joint_packet_ready_gpio,
+        manager->config.joint_packet_ready_pin);
 }
 
 static inline bool packet_manager_send_robot_packet(
@@ -94,20 +105,19 @@ static inline bool packet_manager_send_robot_packet(
     uint8_t buffer[ATLAS_ROBOT_PACKET_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
-    atlas_checksum_t checksum;
-    atlas_checksum_encode(&checksum, (uint8_t (*)[ATLAS_CHECKSUM_SIZE])buffer);
-
+    atlas_robot_packet_print(packet);
     atlas_robot_packet_encode(packet, &buffer);
 
-    bool result = packet_manager_packet_spi_transmit_data(manager,
-                                                          buffer,
-                                                          sizeof(buffer));
-    if (result) {
-        packet_manager_set_data_ready_pin(manager, false);
-        packet_manager_set_data_ready_pin(manager, true);
+    if (!packet_manager_packet_spi_transmit_data(manager,
+                                                 buffer,
+                                                 sizeof(buffer))) {
+        return false;
     }
 
-    return result;
+    packet_manager_set_robot_packet_ready_pin(manager, false);
+    packet_manager_set_robot_packet_ready_pin(manager, true);
+
+    return true;
 }
 
 static inline bool packet_manager_receive_joint_packet(
@@ -119,21 +129,16 @@ static inline bool packet_manager_receive_joint_packet(
     uint8_t buffer[ATLAS_JOINT_PACKET_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
-    bool result =
-        packet_manager_packet_spi_receive_data(manager, buffer, sizeof(buffer));
-
-    if (!result) {
+    if (!packet_manager_packet_spi_receive_data(manager,
+                                                buffer,
+                                                sizeof(buffer))) {
         return false;
     }
 
     atlas_joint_packet_decode(&buffer, packet);
+    atlas_joint_packet_print(packet);
 
-    atlas_checksum_t checksum;
-    atlas_checksum_calculate(buffer,
-                             sizeof(buffer) - sizeof(atlas_checksum_t),
-                             &checksum);
-
-    return checksum == packet->checksum;
+    return true;
 }
 
 static atlas_err_t packet_manager_packet_joint_start_handler(
@@ -285,7 +290,7 @@ static atlas_err_t packet_manager_event_start_handler(
     manager->is_running = true;
 
 #ifdef PACKET_TEST
-    HAL_TIM_Base_Start_IT(manager->config.chip_select_timer);
+    HAL_TIM_Base_Start_IT(manager->config.joint_packet_ready_timer);
 #endif
 
     return ATLAS_ERR_OK;
@@ -448,7 +453,7 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
     manager->is_running = false;
     manager->config = *config;
 
-    packet_manager_set_data_ready_pin(manager, true);
+    packet_manager_set_robot_packet_ready_pin(manager, true);
 
     if (!packet_manager_send_system_notify(SYSTEM_NOTIFY_PACKET_READY)) {
         return ATLAS_ERR_FAIL;
