@@ -159,10 +159,6 @@ static atlas_err_t system_manager_notify_retry_timer_handler(
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
 
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
     bool (*retry_timer_function)(void) = NULL;
 
     if (manager->is_packet_running) {
@@ -191,15 +187,20 @@ static atlas_err_t system_manager_notify_packet_ready_handler(
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
 
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
     packet_event_t event = {.type = PACKET_EVENT_TYPE_START};
     event.payload.start = (packet_event_payload_start_t){};
 
     if (!system_manager_send_packet_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
+    }
+
+    if (manager->is_joint_ready && !manager->is_joint_running) {
+        packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
+        event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
+
+        if (!system_manager_send_packet_event(manager, &event)) {
+            return ATLAS_ERR_FAIL;
+        }
     }
 
     manager->is_packet_running = true;
@@ -212,19 +213,14 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
 {
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
+
+    manager->is_joint_ready = true;
 
     if (manager->is_packet_running) {
         packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
         event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
 
         if (!system_manager_send_packet_event(manager, &event)) {
-            return ATLAS_ERR_FAIL;
-        }
-    } else {
-        if (!system_manager_start_retry_timer()) {
             return ATLAS_ERR_FAIL;
         }
     }
@@ -237,10 +233,6 @@ static atlas_err_t system_manager_notify_joint_fault_handler(
 {
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
 
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_FAULT};
     event.payload.joint_fault = (packet_event_payload_joint_fault_t){};
@@ -280,10 +272,6 @@ static atlas_err_t system_manager_event_joint_start_handler(
     ATLAS_ASSERT(manager && joint_start);
     ATLAS_LOG_FUNC(TAG);
 
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
     joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
     event.payload.start = (joint_event_payload_start_t){};
 
@@ -291,14 +279,14 @@ static atlas_err_t system_manager_event_joint_start_handler(
         return ATLAS_ERR_FAIL;
     }
 
-    manager->is_joint_running = true;
-
     system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
     atlas_timestamp_print(&manager->start_timestamp);
 
 #ifdef DELTA_TEST
     HAL_TIM_Base_Start_IT(manager->config.delta_timer);
 #endif
+
+    manager->is_joint_running = true;
 
     return ATLAS_ERR_OK;
 }
@@ -310,10 +298,6 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     ATLAS_ASSERT(manager && joint_stop);
     ATLAS_LOG_FUNC(TAG);
 
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
     joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP};
     event.payload.stop = (joint_event_payload_stop_t){};
 
@@ -322,6 +306,8 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     }
 
     memset(&manager->start_timestamp, 0, sizeof(manager->start_timestamp));
+
+    manager->is_joint_running = false;
 
     return ATLAS_ERR_OK;
 }
@@ -332,10 +318,6 @@ static atlas_err_t system_manager_event_joint_reference_handler(
 {
     ATLAS_ASSERT(manager && joint_reference);
     ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
 
     if (atlas_joint_reference_is_equal(&manager->joint_reference,
                                        joint_reference)) {
@@ -360,10 +342,6 @@ static atlas_err_t system_manager_event_joint_measure_handler(
 {
     ATLAS_ASSERT(manager && joint_measure);
     ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
 
     if (atlas_joint_measure_is_equal(&manager->joint_measure, joint_measure)) {
         return ATLAS_ERR_OK;
@@ -440,9 +418,9 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
 {
     ATLAS_ASSERT(manager && config);
 
-    manager->is_running = true;
     manager->is_packet_running = false;
     manager->is_joint_running = false;
+    manager->is_joint_ready = false;
     manager->config = *config;
 
 #ifdef USE_LOG_TASK

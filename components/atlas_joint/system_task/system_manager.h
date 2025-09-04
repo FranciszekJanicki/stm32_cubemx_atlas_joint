@@ -19,9 +19,9 @@ typedef struct {
 } system_config_t;
 
 typedef struct {
-    bool is_running;
     bool is_joint_running;
     bool is_packet_running;
+    bool is_joint_ready;
 
     atlas_timestamp_t current_timestamp;
     atlas_timestamp_t start_timestamp;
