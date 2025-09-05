@@ -92,7 +92,9 @@ atlas_err_t log_task_initialize(log_task_ctx_t* task_ctx)
 
 void log_task_transmit_done_callback(void)
 {
+#ifdef USE_LOG_TASK
     bus_task_transmit_done_callback(task_manager_get(TASK_TYPE_LOG));
+#endif
 }
 
 #undef LOG_TASK_STACK_DEPTH

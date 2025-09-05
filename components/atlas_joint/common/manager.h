@@ -14,6 +14,7 @@ typedef enum {
     TASK_TYPE_JOINT,
     TASK_TYPE_PACKET,
     TASK_TYPE_LOG,
+    TASK_TYPE_WATCHDOG,
     TASK_TYPE_NUM,
 } TaskType_t;
 
@@ -36,7 +37,6 @@ typedef enum {
 } SemaphoreType_t;
 
 typedef enum {
-    TIMER_TYPE_SYSTEM,
     TIMER_TYPE_NUM,
 } TimerType_t;
 

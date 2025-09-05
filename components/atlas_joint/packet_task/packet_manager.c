@@ -268,7 +268,8 @@ static atlas_err_t packet_manager_notify_handler(packet_manager_t* manager,
 {
     ATLAS_ASSERT(manager);
 
-    if (notify & PACKET_NOTIFY_JOINT_PACKET_READY) {
+    if ((notify & PACKET_NOTIFY_JOINT_PACKET_READY) ==
+        PACKET_NOTIFY_JOINT_PACKET_READY) {
         ATLAS_RET_ON_ERR(
             packet_manager_notify_joint_packet_ready_handler(manager));
     }
@@ -460,16 +461,4 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
     }
 
     return ATLAS_ERR_OK;
-}
-
-void packet_ready_callback(void)
-{
-    BaseType_t task_woken = pdFALSE;
-
-    xTaskNotifyFromISR(task_manager_get(TASK_TYPE_PACKET),
-                       PACKET_NOTIFY_JOINT_PACKET_READY,
-                       eSetBits,
-                       &task_woken);
-
-    portYIELD_FROM_ISR(task_woken);
 }

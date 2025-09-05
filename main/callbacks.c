@@ -4,15 +4,20 @@
 #include "config.h"
 #include "iwdg.h"
 #include "log_task.h"
+#include "packet_task.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include "system_task.h"
 #include "wwdg.h"
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
 {
+    if (htim->Instance == SYSTICK_TIMER->Instance) {
+        HAL_IncTick();
+    }
 #ifdef DELTA_TEST
-    if (htim->Instance == JOINT_DELTA_TIMER->Instance) {
+    else if (htim->Instance == JOINT_DELTA_TIMER->Instance) {
         joint_task_delta_timer_callback();
     }
 #endif
@@ -21,11 +26,12 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
         packet_task_joint_packet_ready_callback();
     }
 #endif
-    else if (htim->Instance == SYSTICK_TIMER->Instance) {
-        HAL_IncTick();
-    } else if (htim->Instance == UPDATE_TIMER->Instance) {
-        HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
-        HAL_WWDG_Refresh(WINDOW_WATCHDOG);
+    else if (htim->Instance == WATCHDOG_TIMER->Instance) {
+        if (is_kernel_started) {
+            watchdog_task_watchdog_timer_callback();
+        } else {
+            HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
+        }
     }
 }
 
@@ -53,12 +59,4 @@ __attribute__((used)) void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
         log_task_transmit_done_callback();
     }
 #endif
-}
-
-__attribute__((used)) void HAL_WWDG_EarlyWakeupCallback(
-    WWDG_HandleTypeDef* wwdg)
-{
-    if (wwdg->Instance == WINDOW_WATCHDOG->Instance) {
-        HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
-    }
 }

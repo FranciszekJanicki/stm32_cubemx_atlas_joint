@@ -6,13 +6,17 @@
 #include "log_task.h"
 #include "packet_task.h"
 #include "system_task.h"
+#include "watchdog_task.h"
 
 typedef struct {
     system_task_ctx_t system_ctx;
     log_task_ctx_t log_ctx;
+    watchdog_task_ctx_t watchdog_ctx;
     packet_task_ctx_t packet_ctx;
     joint_task_ctx_t joint_ctx;
 } atlas_joint_config_t;
+
+extern bool volatile is_kernel_started;
 
 void atlas_joint_initialize(atlas_joint_config_t const* config);
 

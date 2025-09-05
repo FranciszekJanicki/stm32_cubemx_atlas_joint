@@ -53,6 +53,7 @@ static inline bool system_manager_set_rtc_timestamp(
 }
 
 static inline bool system_manager_get_rtc_timestamp(
+
     system_manager_t* manager,
     atlas_timestamp_t* timestamp)
 {
@@ -83,18 +84,6 @@ static inline bool system_manager_get_rtc_timestamp(
     return true;
 }
 
-static inline bool system_manager_start_retry_timer(void)
-{
-    return xTimerStart(timer_manager_get(TIMER_TYPE_SYSTEM),
-                       pdMS_TO_TICKS(1)) == pdPASS;
-}
-
-static inline bool system_manager_stop_retry_timer(void)
-{
-    return xTimerStop(timer_manager_get(TIMER_TYPE_SYSTEM), pdMS_TO_TICKS(1)) ==
-           pdPASS;
-}
-
 static inline bool system_manager_has_system_event(void)
 {
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM));
@@ -103,7 +92,7 @@ static inline bool system_manager_has_system_event(void)
 static inline bool system_manager_send_joint_event(system_manager_t* manager,
                                                    joint_event_t const* event)
 {
-    ATLAS_ASSERT(event);
+    ATLAS_ASSERT(manager && event);
 
     if (!manager->is_joint_running && event->type != JOINT_EVENT_TYPE_START) {
         return false;
@@ -117,7 +106,7 @@ static inline bool system_manager_send_joint_event(system_manager_t* manager,
 static inline bool system_manager_send_packet_event(system_manager_t* manager,
                                                     packet_event_t const* event)
 {
-    ATLAS_ASSERT(event);
+    ATLAS_ASSERT(manager && event);
 
     if (!manager->is_packet_running && event->type != PACKET_EVENT_TYPE_START) {
         return false;
@@ -151,34 +140,6 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
                            SYSTEM_NOTIFY_ALL,
                            (uint32_t*)notify,
                            pdMS_TO_TICKS(1)) == pdPASS;
-}
-
-static atlas_err_t system_manager_notify_retry_timer_handler(
-    system_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-    ATLAS_LOG_FUNC(TAG);
-
-    bool (*retry_timer_function)(void) = NULL;
-
-    if (manager->is_packet_running) {
-        packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
-        event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
-
-        if (!system_manager_send_packet_event(manager, &event)) {
-            return ATLAS_ERR_FAIL;
-        }
-
-        retry_timer_function = system_manager_stop_retry_timer;
-    } else {
-        retry_timer_function = system_manager_start_retry_timer;
-    }
-
-    if (!retry_timer_function()) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    return ATLAS_ERR_OK;
 }
 
 static atlas_err_t system_manager_notify_packet_ready_handler(
@@ -249,16 +210,13 @@ static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
 {
     ATLAS_ASSERT(manager);
 
-    if (notify & SYSTEM_NOTIFY_RETRY_TIMER) {
-        ATLAS_RET_ON_ERR(system_manager_notify_retry_timer_handler(manager));
-    }
-    if (notify & SYSTEM_NOTIFY_JOINT_READY) {
+    if ((notify & SYSTEM_NOTIFY_JOINT_READY) == SYSTEM_NOTIFY_JOINT_READY) {
         ATLAS_RET_ON_ERR(system_manager_notify_joint_ready_handler(manager));
     }
-    if (notify & SYSTEM_NOTIFY_JOINT_FAULT) {
+    if ((notify & SYSTEM_NOTIFY_JOINT_FAULT) == SYSTEM_NOTIFY_JOINT_FAULT) {
         ATLAS_RET_ON_ERR(system_manager_notify_joint_fault_handler(manager));
     }
-    if (notify & SYSTEM_NOTIFY_PACKET_READY) {
+    if ((notify & SYSTEM_NOTIFY_PACKET_READY) == SYSTEM_NOTIFY_PACKET_READY) {
         ATLAS_RET_ON_ERR(system_manager_notify_packet_ready_handler(manager));
     }
 
@@ -278,9 +236,6 @@ static atlas_err_t system_manager_event_joint_start_handler(
     if (!system_manager_send_joint_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
-
-    system_manager_get_rtc_timestamp(manager, &manager->start_timestamp);
-    atlas_timestamp_print(&manager->start_timestamp);
 
 #ifdef DELTA_TEST
     HAL_TIM_Base_Start_IT(manager->config.delta_timer);
@@ -304,8 +259,6 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     if (!system_manager_send_joint_event(manager, &event)) {
         return ATLAS_ERR_FAIL;
     }
-
-    memset(&manager->start_timestamp, 0, sizeof(manager->start_timestamp));
 
     manager->is_joint_running = false;
 
@@ -348,7 +301,7 @@ static atlas_err_t system_manager_event_joint_measure_handler(
     }
 
     packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_MEASURE};
-    event.payload.joint_measure.num = manager->config.num;
+    event.payload.joint_measure.num = manager->config.joint_num;
     event.payload.joint_measure.measure = *joint_measure;
     event.payload.joint_measure.timestamp = manager->current_timestamp;
 
@@ -421,12 +374,30 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     manager->is_packet_running = false;
     manager->is_joint_running = false;
     manager->is_joint_ready = false;
-    manager->config = *config;
+
+    memcpy(&manager->config, config, sizeof(*config));
+    memset(&manager->startup_timestamp, 0, sizeof(manager->startup_timestamp));
+    memset(&manager->joint_measure, 0, sizeof(manager->joint_measure));
+    memset(&manager->joint_reference, 0, sizeof(manager->joint_reference));
 
 #ifdef USE_LOG_TASK
     if (!system_manager_send_log_notify(LOG_NOTIFY_START)) {
         return ATLAS_ERR_FAIL;
     }
+#endif
+
+    if (!system_manager_get_rtc_timestamp(manager,
+                                          &manager->startup_timestamp)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    atlas_timestamp_print(&manager->startup_timestamp);
+
+#ifdef DELTA_TEST
+    ATLAS_LOG(TAG, "Delta test mode enabled");
+#endif
+#ifdef PACKET_TEST
+    ATLAS_LOG(TAG, "Packet test mode enabled");
 #endif
 
     return ATLAS_ERR_OK;

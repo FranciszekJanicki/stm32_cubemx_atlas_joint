@@ -22,7 +22,7 @@ static atlas_joint_config_t config = {
             .log_bus = LOG_USB_BUS
 #endif
         },
-    .system_ctx = {.config = {.num = JOINT_NUM,
+    .system_ctx = {.config = {.joint_num = JOINT_NUM,
                               .timestamp_rtc = TIMESTAMP_RTC,
 #ifdef DELTA_TEST
                               .delta_timer = JOINT_DELTA_TIMER,
@@ -84,10 +84,10 @@ int main(void)
     MX_SPI1_Init();
     MX_RTC_Init();
     MX_CRC_Init();
-    // MX_IWDG_Init();
-    // MX_WWDG_Init();
-
-    HAL_Delay(500U);
+#ifdef USE_WATCHDOG_TASK
+    MX_IWDG_Init();
+    MX_WWDG_Init();
+#endif
 
     atlas_joint_initialize(&config);
 }

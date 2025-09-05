@@ -1,31 +1,20 @@
-add_subdirectory(common)
-add_subdirectory(system_task)
-add_subdirectory(joint_task)
-add_subdirectory(packet_task)
-add_subdirectory(log_task)
-add_subdirectory(watchdog_task)
+add_library(watchdog_task STATIC)
 
-add_library(atlas_joint STATIC)
+target_sources(watchdog_task PRIVATE 
+    watchdog_task.c
+    watchdog_manager.c
+)
 
-target_sources(atlas_joint PRIVATE 
-    atlas_joint.c
-)  
-
-target_include_directories(atlas_joint PUBLIC
+target_include_directories(watchdog_task PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(atlas_joint PUBLIC 
+target_link_libraries(watchdog_task PUBLIC
     common
-    system_task
-    joint_task
-    log_task
-    packet_task
-    watchdog_task
     stm32cubemx
 )
 
-target_compile_options(atlas_joint PUBLIC
+target_compile_options(watchdog_task PUBLIC
     -std=c23
     -Wall
     -Wextra

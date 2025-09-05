@@ -624,10 +624,10 @@ static atlas_err_t joint_manager_notify_handler(joint_manager_t* manager,
 {
     ATLAS_ASSERT(manager);
 
-    if (notify & JOINT_NOTIFY_DELTA_TIMER) {
+    if ((notify & JOINT_NOTIFY_DELTA_TIMER) == JOINT_NOTIFY_DELTA_TIMER) {
         ATLAS_RET_ON_ERR(joint_manager_notify_delta_timer_handler(manager));
     }
-    if (notify & JOINT_NOTIFY_PWM_PULSE) {
+    if ((notify & JOINT_NOTIFY_PWM_PULSE) == JOINT_NOTIFY_PWM_PULSE) {
         ATLAS_RET_ON_ERR(joint_manager_notify_pwm_pulse_handler(manager));
     }
 

@@ -224,9 +224,12 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
              * 16).          */
             /*******************************************************************************/
         case CDC_SET_LINE_CODING:
-            usbd_cdc_linecoding.format = pbuf[4];
-            usbd_cdc_linecoding.paritytype = pbuf[5];
-            usbd_cdc_linecoding.datatype = pbuf[6];
+            usbd_cdc_linecoding.bitrate =
+                (uint32_t)(pbuf[0U] | (pbuf[1] << 8U) | (pbuf[2U] << 16U) |
+                           (pbuf[3U] << 24U));
+            usbd_cdc_linecoding.format = pbuf[4U];
+            usbd_cdc_linecoding.paritytype = pbuf[5U];
+            usbd_cdc_linecoding.datatype = pbuf[6U];
             break;
 
         case CDC_GET_LINE_CODING:

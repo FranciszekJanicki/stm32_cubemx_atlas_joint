@@ -207,7 +207,7 @@ extern UART_HandleTypeDef huart2;
 
 #define SYSTICK_TIMER (&htim4)
 
-#define UPDATE_TIMER (&htim5)
+#define WATCHDOG_TIMER (&htim5)
 
 #define PACKET_SPI_BUS (&hspi1)
 

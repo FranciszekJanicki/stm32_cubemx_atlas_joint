@@ -9,8 +9,10 @@
 #include <stdint.h>
 
 typedef struct {
-    atlas_joint_num_t num;
+    atlas_joint_num_t joint_num;
+
     RTC_HandleTypeDef* timestamp_rtc;
+
 #ifdef DELTA_TEST
     TIM_HandleTypeDef* delta_timer;
 #endif
@@ -24,7 +26,7 @@ typedef struct {
     bool is_joint_ready;
 
     atlas_timestamp_t current_timestamp;
-    atlas_timestamp_t start_timestamp;
+    atlas_timestamp_t startup_timestamp;
 
     atlas_joint_measure_t joint_measure;
     atlas_joint_reference_t joint_reference;
