@@ -108,6 +108,11 @@ static inline bool packet_manager_send_robot_packet(
     atlas_robot_packet_print(packet);
     atlas_robot_packet_encode(packet, &buffer);
 
+    buffer[sizeof(buffer) - 1U] = 0;
+    ATLAS_LOG(TAG,
+              "atlas_robot_packet transmitted by joint: %s",
+              (char*)buffer);
+
     if (!packet_manager_packet_spi_transmit_data(manager,
                                                  buffer,
                                                  sizeof(buffer))) {
@@ -134,6 +139,9 @@ static inline bool packet_manager_receive_joint_packet(
                                                 sizeof(buffer))) {
         return false;
     }
+
+    buffer[sizeof(buffer) - 1U] = 0;
+    ATLAS_LOG(TAG, "atlas_joint_packet received by joint: %s", (char*)buffer);
 
     atlas_joint_packet_decode(&buffer, packet);
     atlas_joint_packet_print(packet);

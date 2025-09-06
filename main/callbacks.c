@@ -16,7 +16,7 @@ static inline void joint_chip_select_debounce_timer_callback(void)
 
     if (HAL_GPIO_ReadPin(JOINT_CHIP_SELECT_GPIO, JOINT_CHIP_SELECT_PIN) ==
         GPIO_PIN_RESET) {
-        if (debounce_counter++ >= 10U) {
+        if (debounce_counter++ >= 3U) {
             debounce_counter = 0U;
 
             packet_task_joint_packet_ready_callback();
@@ -31,7 +31,7 @@ static inline void joint_delta_elapsed_debounce_timer_callback(void)
 
     if (HAL_GPIO_ReadPin(JOINT_DELTA_ELAPSED_GPIO, JOINT_DELTA_ELAPSED_PIN) ==
         GPIO_PIN_SET) {
-        if (debounce_counter++ >= 10U) {
+        if (debounce_counter++ >= 3U) {
             debounce_counter = 0U;
 
             joint_task_delta_elapsed_callback();
