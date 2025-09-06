@@ -53,9 +53,46 @@ static QueueHandle_t packet_task_create_queue(void)
                               &packet_queue_buffer);
 }
 
+#ifdef PACKET_TEST
+#define PACKET_TEST_TIMER_NAME ("packet_test_timer")
+#define PACKET_TEST_TIMER_PERIOD (pdMS_TO_TICKS(1000))
+#define PACKET_TEST_TIMER_AUTORELOAD (pdTRUE)
+#define PACKET_TEST_TIMER_ID (NULL)
+
+static void packet_task_packet_test_timer_callback(TimerHandle_t timer)
+{
+    xTaskNotify(task_manager_get(TASK_TYPE_PACKET),
+                PACKET_NOTIFY_JOINT_PACKET_READY,
+                eSetBits);
+}
+
+static TimerHandle_t packet_task_create_packet_test_timer(
+    packet_task_ctx_t* task_ctx)
+{
+    static StaticTimer_t packet_test_timer_buffer;
+
+    return xTimerCreateStatic(PACKET_TEST_TIMER_NAME,
+                              PACKET_TEST_TIMER_PERIOD,
+                              PACKET_TEST_TIMER_AUTORELOAD,
+                              PACKET_TEST_TIMER_ID,
+                              packet_task_packet_test_timer_callback,
+                              &packet_test_timer_buffer);
+}
+#endif
+
 atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
+
+#ifdef PACKET_TEST
+    TimerHandle_t packet_test_timer =
+        packet_task_create_packet_test_timer(task_ctx);
+    if (packet_test_timer == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    timer_manager_set(TIMER_TYPE_PACKET_TEST, packet_test_timer);
+#endif
 
     QueueHandle_t packet_queue = packet_task_create_queue();
     if (packet_queue == NULL) {

@@ -237,10 +237,6 @@ static atlas_err_t system_manager_event_joint_start_handler(
         return ATLAS_ERR_FAIL;
     }
 
-#ifdef DELTA_TEST
-    HAL_TIM_Base_Start_IT(manager->config.delta_timer);
-#endif
-
     manager->is_joint_running = true;
 
     return ATLAS_ERR_OK;
@@ -392,13 +388,6 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     }
 
     atlas_timestamp_print(&manager->startup_timestamp);
-
-#ifdef DELTA_TEST
-    ATLAS_LOG(TAG, "Delta test mode enabled");
-#endif
-#ifdef PACKET_TEST
-    ATLAS_LOG(TAG, "Packet test mode enabled");
-#endif
 
     return ATLAS_ERR_OK;
 }

@@ -7,11 +7,7 @@
 #include "usb_device.h"
 
 typedef struct {
-#ifdef LOG_VIA_UART
     UART_HandleTypeDef* log_bus;
-#else
-    USBD_ClassTypeDef* log_bus;
-#endif
 } log_task_ctx_t;
 
 atlas_err_t log_task_initialize(log_task_ctx_t* task_ctx);

@@ -1,6 +1,18 @@
 #ifndef MAIN_CONFIG_H
 #define MAIN_CONFIG_H
 
+#include "crc.h"
+#include "gpio.h"
+#include "i2c.h"
+#include "iwdg.h"
+#include "rtc.h"
+#include "spi.h"
+#include "tim.h"
+#include "usart.h"
+#include "wwdg.h"
+
+extern TIM_HandleTypeDef htim4;
+
 #define JOINT_NUM (ATLAS_JOINT_NUM_1)
 
 #define JOINT_1_PROP_GAIN (1.0F)
@@ -185,48 +197,28 @@
 #error "Unsupported JOINT_NUM selected!"
 #endif
 
-extern RTC_HandleTypeDef hrtc;
-extern IWDG_HandleTypeDef hiwdg;
-extern WWDG_HandleTypeDef hwwdg;
-extern I2C_HandleTypeDef hi2c1;
-extern SPI_HandleTypeDef hspi1;
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
-extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim5;
-extern UART_HandleTypeDef huart2;
-
-#ifdef LOG_VIA_UART
 #define LOG_UART_BUS (&huart2)
-#else
 #define LOG_USB_BUS (NULL)
-#endif
 
 #define TIMESTAMP_RTC (&hrtc)
 
 #define SYSTICK_TIMER (&htim4)
 
-#define WATCHDOG_TIMER (&htim5)
+#define WATCHDOG_REFRESH_TIMER (&htim5)
 
 #define PACKET_SPI_BUS (&hspi1)
 
 #define JOINT_CHIP_SELECT_GPIO (GPIOB)
 #define JOINT_CHIP_SELECT_PIN (1U << 14U)
 
-#define JOINT_DELTA_TIMER_GPIO (GPIOB)
-#define JOINT_DELTA_TIMER_PIN (1U << 13U)
+#define JOINT_DELTA_ELAPSED_GPIO (GPIOB)
+#define JOINT_DELTA_ELAPSED_PIN (1U << 13U)
 
 #define JOINT_DATA_READY_GPIO (GPIOB)
 #define JOINT_DATA_READY_PIN (1U << 12U)
 
-#ifdef PACKET_TEST
-#define JOINT_CHIP_SELECT_TIMER (&htim3)
-#endif
-
-#ifdef DELTA_TEST
-#define JOINT_DELTA_TIMER (&htim1)
-#endif
+#define JOINT_DELTA_ELAPSED_DEBOUNCE_TIMER (&htim1)
+#define JOINT_CHIP_SELECT_DEBOUNCE_TIMER (&htim3)
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)

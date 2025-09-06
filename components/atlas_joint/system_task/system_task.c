@@ -81,9 +81,3 @@ atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
 #undef SYSTEM_QUEUE_ITEMS
 #undef SYSTEM_QUEUE_ITEM_SIZE
 #undef SYSTEM_QUEUE_STORAGE_SIZE
-
-#undef SYSTEM_TIMER_NAME
-#undef SYSTEM_TIMER_PERIOD_MS
-#undef SYSTEM_TIMER_PERIOD_TICKS
-#undef SYSTEM_TIMER_ID
-#undef SYSTEM_TIMER_AUTORELOAD

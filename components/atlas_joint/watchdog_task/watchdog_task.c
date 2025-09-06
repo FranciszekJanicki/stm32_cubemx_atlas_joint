@@ -44,7 +44,7 @@ static TaskHandle_t watchdog_task_create_task(watchdog_task_ctx_t* task_ctx)
                              &watchdog_task_buffer);
 }
 
-void watchdog_task_watchdog_timer_callback(void)
+void watchdog_task_refresh_timer_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_WATCHDOG),
@@ -55,20 +55,20 @@ void watchdog_task_watchdog_timer_callback(void)
     portYIELD_FROM_ISR(task_woken);
 }
 
-atlas_err_t watchdog_task_start_watchdog_timer(watchdog_task_ctx_t* task_ctx)
+atlas_err_t watchdog_task_start_refresh_timer(watchdog_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-    return HAL_TIM_Base_Start_IT(task_ctx->config.watchdog_timer) == HAL_OK
+    return HAL_TIM_Base_Start_IT(task_ctx->config.refresh_timer) == HAL_OK
                ? ATLAS_ERR_OK
                : ATLAS_ERR_FAIL;
 }
 
-atlas_err_t watchdog_task_stop_watchdog_timer(watchdog_task_ctx_t* task_ctx)
+atlas_err_t watchdog_task_stop_refresh_timer(watchdog_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-    return HAL_TIM_Base_Stop_IT(task_ctx->config.watchdog_timer) == HAL_OK
+    return HAL_TIM_Base_Stop_IT(task_ctx->config.refresh_timer) == HAL_OK
                ? ATLAS_ERR_OK
                : ATLAS_ERR_FAIL;
 }
@@ -77,9 +77,11 @@ atlas_err_t watchdog_task_initialize(watchdog_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-#ifdef USE_WATCHDOG_TASK
-    ATLAS_RET_ON_ERR(watchdog_task_start_watchdog_timer(task_ctx));
+#ifdef USE_WATCHDOG
+    ATLAS_RET_ON_ERR(watchdog_task_start_refresh_timer(task_ctx));
+#endif
 
+#ifdef USE_WATCHDOG_TASK
     TaskHandle_t watchdog_task = watchdog_task_create_task(task_ctx);
     if (watchdog_task == NULL) {
         return ATLAS_ERR_FAIL;
@@ -98,9 +100,3 @@ atlas_err_t watchdog_task_initialize(watchdog_task_ctx_t* task_ctx)
 #undef WATCHDOG_QUEUE_ITEMS
 #undef WATCHDOG_QUEUE_ITEM_SIZE
 #undef WATCHDOG_QUEUE_STORAGE_SIZE
-
-#undef WATCHDOG_TIMER_NAME
-#undef WATCHDOG_TIMER_PERIOD_MS
-#undef WATCHDOG_TIMER_PERIOD_TICKS
-#undef WATCHDOG_TIMER_ID
-#undef WATCHDOG_TIMER_AUTORELOAD

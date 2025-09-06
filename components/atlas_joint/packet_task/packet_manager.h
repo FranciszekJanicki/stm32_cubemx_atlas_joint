@@ -17,9 +17,6 @@ typedef struct {
     uint16_t joint_packet_ready_pin;
 
     SPI_HandleTypeDef* packet_spi_bus;
-#ifdef PACKET_TEST
-    TIM_HandleTypeDef* joint_packet_ready_timer;
-#endif
 } packet_config_t;
 
 typedef struct {
@@ -29,7 +26,8 @@ typedef struct {
 } packet_manager_t;
 
 atlas_err_t packet_manager_initialize(packet_manager_t* manager,
-                                      packet_config_t const* config);
+
+    packet_config_t const* config);
 atlas_err_t packet_manager_process(packet_manager_t* manager);
 
 #endif // PACKET_TASK_PACKET_MANAGER_H

@@ -62,9 +62,46 @@ static QueueHandle_t joint_task_create_queue(void)
                               &joint_queue_buffer);
 }
 
+#ifdef DELTA_TEST
+#define DELTA_TEST_TIMER_NAME ("delta_test_timer")
+#define DELTA_TEST_TIMER_PERIOD (pdMS_TO_TICKS(10))
+#define DELTA_TEST_TIMER_AUTORELOAD (pdTRUE)
+#define DELTA_TEST_TIMER_ID (NULL)
+
+void joint_task_delta_test_timer_callback(TimerHandle_t timer)
+{
+    xTaskNotify(task_manager_get(TASK_TYPE_JOINT),
+                JOINT_NOTIFY_DELTA_ELAPSED,
+                eSetBits);
+}
+
+static TimerHandle_t joint_task_create_delta_test_timer(
+    joint_task_ctx_t* task_ctx)
+{
+    static StaticTimer_t delta_test_timer_buffer;
+
+    return xTimerCreateStatic(DELTA_TEST_TIMER_NAME,
+                              DELTA_TEST_TIMER_PERIOD,
+                              DELTA_TEST_TIMER_AUTORELOAD,
+                              DELTA_TEST_TIMER_ID,
+                              joint_task_delta_test_timer_callback,
+                              &delta_test_timer_buffer);
+}
+#endif
+
 atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
+
+#ifdef DELTA_TEST
+    TimerHandle_t delta_test_timer =
+        joint_task_create_delta_test_timer(task_ctx);
+    if (delta_test_timer == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    timer_manager_set(TIMER_TYPE_DELTA_TEST, delta_test_timer);
+#endif
 
     QueueHandle_t joint_queue = joint_task_create_queue();
     if (joint_queue == NULL) {
@@ -90,11 +127,11 @@ atlas_err_t joint_task_initialize(joint_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-void joint_task_delta_timer_callback(void)
+void joint_task_delta_elapsed_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_JOINT),
-                       JOINT_NOTIFY_DELTA_TIMER,
+                       JOINT_NOTIFY_DELTA_ELAPSED,
                        eSetBits,
                        &task_woken);
 

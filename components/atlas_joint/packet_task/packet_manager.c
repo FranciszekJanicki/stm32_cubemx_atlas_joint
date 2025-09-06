@@ -291,7 +291,7 @@ static atlas_err_t packet_manager_event_start_handler(
     manager->is_running = true;
 
 #ifdef PACKET_TEST
-    HAL_TIM_Base_Start_IT(manager->config.joint_packet_ready_timer);
+    xTimerStart(timer_manager_get(TIMER_TYPE_PACKET_TEST), pdMS_TO_TICKS(1));
 #endif
 
     return ATLAS_ERR_OK;

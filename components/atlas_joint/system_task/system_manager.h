@@ -13,9 +13,6 @@ typedef struct {
 
     RTC_HandleTypeDef* timestamp_rtc;
 
-#ifdef DELTA_TEST
-    TIM_HandleTypeDef* delta_timer;
-#endif
     GPIO_TypeDef* delta_timer_gpio;
     uint16_t delta_timer_pin;
 } system_config_t;

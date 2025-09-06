@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 typedef struct {
-    TIM_HandleTypeDef* watchdog_timer;
+    TIM_HandleTypeDef* refresh_timer;
     WWDG_HandleTypeDef* window_watchdog;
     IWDG_HandleTypeDef* independent_watchdog;
 } watchdog_config_t;

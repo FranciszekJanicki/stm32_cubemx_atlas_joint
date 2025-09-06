@@ -1,4 +1,5 @@
 #include "FreeRTOS.h"
+#include "config.h"
 #include "manager.h"
 #include "semphr.h"
 #include "stream_buffer.h"
@@ -55,8 +56,8 @@ int _write(int file, char* ptr, int len)
     SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
 
     if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(10))) {
-#ifdef LOG_VIA_UART
-        HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, len);
+#ifdef USE_UART
+        HAL_UART_Transmit(LOG_UART_BUS, (uint8_t*)ptr, len, len);
 #else
         CDC_Transmit_FS((uint8_t*)ptr, len);
 #endif

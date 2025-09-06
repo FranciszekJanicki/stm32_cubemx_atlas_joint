@@ -10,6 +10,6 @@ typedef struct {
 
 atlas_err_t watchdog_task_initialize(watchdog_task_ctx_t* task_ctx);
 
-void watchdog_task_watchdog_timer_callback(void);
+void watchdog_task_refresh_timer_callback(void);
 
 #endif // WATCHDOG_TASK_WATCHDOG_TASK_H

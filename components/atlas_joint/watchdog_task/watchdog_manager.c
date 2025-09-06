@@ -5,8 +5,8 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_iwdg.h"
-#include "stm32f4xx_hal_wwdg.h"
 #include "stm32f4xx_hal_rtc.h"
+#include "stm32f4xx_hal_wwdg.h"
 #include "task.h"
 #include <stdint.h>
 #include <string.h>
@@ -29,14 +29,6 @@ static inline bool watchdog_manager_reset_independent_watchdog(
     return HAL_IWDG_Refresh(manager->config.independent_watchdog) == HAL_OK;
 }
 
-static inline bool watchdog_manager_start_window_watchdog(
-    watchdog_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-
-    return HAL_WWDG_Init(manager->config.window_watchdog) == HAL_OK;
-}
-
 static inline bool watchdog_manager_receive_watchdog_notify(
     watchdog_notify_t* notify)
 {
@@ -48,11 +40,9 @@ static inline bool watchdog_manager_receive_watchdog_notify(
                            portMAX_DELAY) == pdPASS;
 }
 
-static atlas_err_t watchdog_manager_notify_watchdog_timer_handler(
+static atlas_err_t watchdog_manager_notify_refresh_timer_handler(
     watchdog_manager_t* manager)
 {
-    ATLAS_ASSERT(manager);
-    ATLAS_LOG_FUNC(TAG);
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
 
@@ -117,7 +107,7 @@ static atlas_err_t watchdog_manager_notify_handler(watchdog_manager_t* manager,
     if ((notify & WATCHDOG_NOTIFY_WATCHDOG_TIMER) ==
         WATCHDOG_NOTIFY_WATCHDOG_TIMER) {
         ATLAS_RET_ON_ERR(
-            watchdog_manager_notify_watchdog_timer_handler(manager));
+            watchdog_manager_notify_refresh_timer_handler(manager));
     }
     if ((notify & WATCHDOG_NOTIFY_JOINT_ALIVE) == WATCHDOG_NOTIFY_JOINT_ALIVE) {
         ATLAS_RET_ON_ERR(watchdog_manager_notify_joint_alive_handler(manager));
@@ -155,10 +145,6 @@ atlas_err_t watchdog_manager_initialize(watchdog_manager_t* manager,
     manager->is_packet_alive = false;
     manager->is_joint_alive = false;
     manager->is_system_alive = false;
-
-    if (!watchdog_manager_start_window_watchdog(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
 
     return ATLAS_ERR_OK;
 }

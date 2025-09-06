@@ -541,7 +541,7 @@ static inline bool joint_manager_receive_joint_notify(joint_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static atlas_err_t joint_manager_notify_delta_timer_handler(
+static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     joint_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
@@ -624,8 +624,8 @@ static atlas_err_t joint_manager_notify_handler(joint_manager_t* manager,
 {
     ATLAS_ASSERT(manager);
 
-    if ((notify & JOINT_NOTIFY_DELTA_TIMER) == JOINT_NOTIFY_DELTA_TIMER) {
-        ATLAS_RET_ON_ERR(joint_manager_notify_delta_timer_handler(manager));
+    if ((notify & JOINT_NOTIFY_DELTA_ELAPSED) == JOINT_NOTIFY_DELTA_ELAPSED) {
+        ATLAS_RET_ON_ERR(joint_manager_notify_delta_elapsed_handler(manager));
     }
     if ((notify & JOINT_NOTIFY_PWM_PULSE) == JOINT_NOTIFY_PWM_PULSE) {
         ATLAS_RET_ON_ERR(joint_manager_notify_pwm_pulse_handler(manager));
@@ -650,6 +650,12 @@ static atlas_err_t joint_manager_event_start_handler(
     }
 
     manager->is_running = true;
+
+#ifdef DELTA_TEST
+    manager->reference.delta_time = 0.01F;
+    manager->reference.position = 100.0F;
+    xTimerStart(timer_manager_get(TIMER_TYPE_DELTA_TEST), pdMS_TO_TICKS(1));
+#endif
 
     return ATLAS_ERR_OK;
 }

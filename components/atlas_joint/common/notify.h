@@ -13,9 +13,9 @@ typedef enum {
 } system_notify_t;
 
 typedef enum {
-    JOINT_NOTIFY_DELTA_TIMER = (1 << 0),
+    JOINT_NOTIFY_DELTA_ELAPSED = (1 << 0),
     JOINT_NOTIFY_PWM_PULSE = (1 << 1),
-    JOINT_NOTIFY_ALL = (JOINT_NOTIFY_DELTA_TIMER | JOINT_NOTIFY_PWM_PULSE),
+    JOINT_NOTIFY_ALL = (JOINT_NOTIFY_DELTA_ELAPSED | JOINT_NOTIFY_PWM_PULSE),
 } joint_notify_t;
 
 typedef enum {

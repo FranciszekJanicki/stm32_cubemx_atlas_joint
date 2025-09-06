@@ -14,31 +14,16 @@
 #include "wwdg.h"
 
 static atlas_joint_config_t config = {
-    .log_ctx =
-        {
-#ifdef LOG_VIA_UART
-            .log_bus = LOG_UART_BUS
-#else
-            .log_bus = LOG_USB_BUS
-#endif
-        },
+    .log_ctx = {.log_bus = LOG_UART_BUS},
     .system_ctx = {.config = {.joint_num = JOINT_NUM,
                               .timestamp_rtc = TIMESTAMP_RTC,
-#ifdef DELTA_TEST
-                              .delta_timer = JOINT_DELTA_TIMER,
-#endif
-                              .delta_timer_gpio = JOINT_DELTA_TIMER_GPIO,
-                              .delta_timer_pin = JOINT_DELTA_TIMER_PIN}},
+                              .delta_timer_gpio = JOINT_DELTA_ELAPSED_GPIO,
+                              .delta_timer_pin = JOINT_DELTA_ELAPSED_PIN}},
     .packet_ctx = {.config = {.robot_packet_ready_gpio = JOINT_DATA_READY_GPIO,
                               .robot_packet_ready_pin = JOINT_DATA_READY_PIN,
                               .joint_packet_ready_gpio = JOINT_CHIP_SELECT_GPIO,
                               .joint_packet_ready_pin = JOINT_CHIP_SELECT_PIN,
-                              .packet_spi_bus = PACKET_SPI_BUS,
-#ifdef PACKET_TEST
-                              .joint_packet_ready_timer =
-                                  JOINT_CHIP_SELECT_TIMER
-#endif
-                   }},
+                              .packet_spi_bus = PACKET_SPI_BUS}},
     .joint_ctx = {.config = {.a4988_pwm_timer = A4988_PWM_TIMER,
                              .a4988_pwm_channel = A4988_PWM_CHANNEL,
                              .a4988_dir_gpio = A4988_DIR_GPIO,
@@ -72,7 +57,7 @@ int main(void)
     SystemClock_Config();
 
     MX_GPIO_Init();
-#ifdef LOG_VIA_UART
+#ifdef USE_UART
     MX_USART2_UART_Init();
 #else
     MX_USB_DEVICE_Init();
@@ -84,10 +69,13 @@ int main(void)
     MX_SPI1_Init();
     MX_RTC_Init();
     MX_CRC_Init();
-#ifdef USE_WATCHDOG_TASK
+#ifdef USE_WATCHDOG
+    MX_TIM5_Init();
     MX_IWDG_Init();
     MX_WWDG_Init();
 #endif
+
+    HAL_Delay(500U);
 
     atlas_joint_initialize(&config);
 }
