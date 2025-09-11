@@ -122,6 +122,17 @@ void packet_task_slave_select_callback(void)
     portYIELD_FROM_ISR(task_woken);
 }
 
+void packet_task_transfer_complete_callback(void)
+{
+    BaseType_t task_woken = pdFALSE;
+    xTaskNotifyFromISR(task_manager_get(TASK_TYPE_PACKET),
+                       PACKET_NOTIFY_TRANSFER_COMPLETE,
+                       eSetBits,
+                       &task_woken);
+
+    portYIELD_FROM_ISR(task_woken);
+}
+
 #undef PACKET_TASK_STACK_DEPTH
 #undef PACKET_TASK_PRIORITY
 #undef PACKET_TASK_NAME

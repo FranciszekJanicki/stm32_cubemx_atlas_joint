@@ -49,32 +49,33 @@ static inline bool packet_manager_receive_packet_notify(packet_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static inline bool packet_manager_packet_spi_transmit_buffer(
-    packet_manager_t* manager)
+static inline bool packet_manager_packet_spi_transfer(packet_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
 
-    memset(manager->receive_buffer, 0, sizeof(manager->receive_buffer));
-
-    return HAL_SPI_TransmitReceive(manager->config.packet_spi_bus,
-                                   manager->transmit_buffer,
-                                   manager->receive_buffer,
-                                   sizeof(manager->transmit_buffer),
-                                   HAL_MAX_DELAY) == HAL_OK;
+    return HAL_SPI_TransmitReceive_IT(manager->config.packet_spi_bus,
+                                      manager->transmit_buffer,
+                                      manager->receive_buffer,
+                                      sizeof(manager->transmit_buffer)) ==
+           HAL_OK;
 }
 
-static inline bool packet_manager_packet_spi_receive_buffer(
-    packet_manager_t* manager)
+static inline bool packet_manager_packet_spi_transmit(packet_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
 
-    memset(manager->transmit_buffer, 0, sizeof(manager->transmit_buffer));
+    return HAL_SPI_Transmit_IT(manager->config.packet_spi_bus,
+                               manager->transmit_buffer,
+                               sizeof(manager->transmit_buffer)) == HAL_OK;
+}
 
-    return HAL_SPI_TransmitReceive(manager->config.packet_spi_bus,
-                                   manager->transmit_buffer,
-                                   manager->receive_buffer,
-                                   sizeof(manager->receive_buffer),
-                                   HAL_MAX_DELAY) == HAL_OK;
+static inline bool packet_manager_packet_spi_receive(packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return HAL_SPI_Receive_IT(manager->config.packet_spi_bus,
+                              manager->receive_buffer,
+                              sizeof(manager->receive_buffer)) == HAL_OK;
 }
 
 static inline void packet_manager_set_data_ready_pin(packet_manager_t* manager,
@@ -87,7 +88,27 @@ static inline void packet_manager_set_data_ready_pin(packet_manager_t* manager,
                       (GPIO_PinState)state);
 }
 
-static inline bool packet_manager_prepare_robot_packet(
+static inline void packet_manager_assert_data_ready(packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    packet_manager_set_data_ready_pin(manager, false);
+
+    manager->is_transfer_pending = true;
+    manager->is_transfer_complete = false;
+}
+
+static inline void packet_manager_deassert_data_ready(packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    packet_manager_set_data_ready_pin(manager, true);
+
+    manager->is_transfer_pending = false;
+    manager->is_transfer_complete = false;
+}
+
+static inline void packet_manager_prepare_robot_packet(
     packet_manager_t* manager,
     atlas_robot_packet_t const* packet)
 {
@@ -98,26 +119,33 @@ static inline bool packet_manager_prepare_robot_packet(
     atlas_robot_packet_print(packet);
     atlas_robot_packet_encode(packet, &manager->transmit_buffer);
 
-    packet_manager_set_data_ready_pin(manager, false);
+    packet_manager_assert_data_ready(manager);
 
-    manager->is_waiting_for_transmit = true;
-    manager->is_transmit_sent = false;
-    manager->is_transmit_finished = false;
-
-    return true;
+    manager->is_transfer_pending = true;
+    manager->is_transfer_complete = false;
 }
 
 static inline bool packet_manager_send_robot_packet(packet_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
 
-    if (!packet_manager_packet_spi_transmit_buffer(manager)) {
+    if (!packet_manager_packet_spi_transfer(manager)) {
         return false;
     }
 
-    manager->is_transmit_sent = true;
+    manager->is_transfer_pending = false;
 
     return true;
+}
+
+static inline void packet_manager_parse_joint_packet(
+    packet_manager_t* manager,
+    atlas_joint_packet_t* packet)
+{
+    ATLAS_ASSERT(manager && packet);
+
+    atlas_joint_packet_decode(&manager->receive_buffer, packet);
+    atlas_joint_packet_print(packet);
 }
 
 static inline bool packet_manager_receive_joint_packet(
@@ -126,12 +154,7 @@ static inline bool packet_manager_receive_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    if (!packet_manager_packet_spi_receive_buffer(manager)) {
-        return false;
-    }
-
-    atlas_joint_packet_decode(&manager->receive_buffer, packet);
-    atlas_joint_packet_print(packet);
+    packet_manager_parse_joint_packet(manager, packet);
 
     return true;
 }
@@ -250,27 +273,39 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
     packet_manager_send_system_event(&event);
 #else
 
-    if (manager->is_waiting_for_transmit && !manager->is_transmit_sent &&
-        !manager->is_transmit_finished) {
+    if (manager->is_transfer_pending && !manager->is_transfer_complete) {
         if (!packet_manager_send_robot_packet(manager)) {
             return false;
         }
+    } else if (!manager->is_transfer_pending && manager->is_transfer_complete) {
+        packet_manager_deassert_data_ready(manager);
+    }
 
-        manager->is_transmit_sent = true;
-    } else if (manager->is_waiting_for_transmit && manager->is_transmit_sent &&
-               !manager->is_transmit_finished) {
-        packet_manager_set_data_ready_pin(manager, true);
-
-        manager->is_transmit_finished = true;
-        manager->is_waiting_for_transmit = false;
-    } else if (!manager->is_waiting_for_transmit) {
-        atlas_joint_packet_t packet;
-        if (packet_manager_receive_joint_packet(manager, &packet)) {
-            ATLAS_RET_ON_ERR(
-                packet_manager_joint_packet_handler(manager, &packet));
-        }
+    atlas_joint_packet_t packet;
+    if (packet_manager_receive_joint_packet(manager, &packet)) {
+        ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager, &packet));
     }
 #endif
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t packet_manager_notify_transfer_complete_handler(
+    packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    manager->is_transfer_complete = true;
+
+    atlas_joint_packet_t packet;
+    if (packet_manager_receive_joint_packet(manager, &packet)) {
+        ATLAS_RET_ON_ERR(packet_manager_joint_packet_handler(manager, &packet));
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -282,6 +317,11 @@ static atlas_err_t packet_manager_notify_handler(packet_manager_t* manager,
 
     if ((notify & PACKET_NOTIFY_SLAVE_SELECT) == PACKET_NOTIFY_SLAVE_SELECT) {
         ATLAS_RET_ON_ERR(packet_manager_notify_slave_select_handler(manager));
+    }
+    if ((notify & PACKET_NOTIFY_TRANSFER_COMPLETE) ==
+        PACKET_NOTIFY_TRANSFER_COMPLETE) {
+        ATLAS_RET_ON_ERR(
+            packet_manager_notify_transfer_complete_handler(manager));
     }
 
     return ATLAS_ERR_OK;
@@ -341,9 +381,7 @@ static atlas_err_t packet_manager_event_joint_measure_handler(
     packet.payload.joint_measure = joint_measure->measure;
 
 #ifndef PACKET_TEST
-    if (!packet_manager_prepare_robot_packet(manager, &packet)) {
-        return ATLAS_ERR_FAIL;
-    }
+    packet_manager_prepare_robot_packet(manager, &packet);
 #endif
 
     return ATLAS_ERR_OK;
@@ -365,9 +403,7 @@ static atlas_err_t packet_manager_event_joint_fault_handler(
     packet.timestamp = joint_fault->timestamp;
     packet.payload.joint_fault = joint_fault->fault;
 
-    if (!packet_manager_prepare_robot_packet(manager, &packet)) {
-        return ATLAS_ERR_FAIL;
-    }
+    packet_manager_prepare_robot_packet(manager, &packet);
 
     return ATLAS_ERR_OK;
 }
@@ -393,9 +429,7 @@ static atlas_err_t packet_manager_event_joint_ready_handler(
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
     packet_manager_send_system_event(&event);
 #else
-    if (!packet_manager_prepare_robot_packet(manager, &packet)) {
-        return ATLAS_ERR_FAIL;
-    }
+    packet_manager_prepare_robot_packet(manager, &packet);
 #endif
 
     return ATLAS_ERR_OK;

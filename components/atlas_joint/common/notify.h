@@ -20,7 +20,9 @@ typedef enum {
 
 typedef enum {
     PACKET_NOTIFY_SLAVE_SELECT = (1 << 0),
-    PACKET_NOTIFY_ALL = (PACKET_NOTIFY_SLAVE_SELECT),
+    PACKET_NOTIFY_TRANSFER_COMPLETE = (1 << 1),
+    PACKET_NOTIFY_ALL =
+        (PACKET_NOTIFY_SLAVE_SELECT | PACKET_NOTIFY_TRANSFER_COMPLETE),
 } packet_notify_t;
 
 typedef enum {

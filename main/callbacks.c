@@ -112,3 +112,10 @@ __attribute__((used)) void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
     }
 #endif
 }
+
+__attribute__((used)) void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi)
+{
+    if (hspi->Instance == PACKET_SPI_BUS->Instance) {
+        packet_task_transfer_complete_callback();
+    }
+}

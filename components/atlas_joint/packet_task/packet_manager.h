@@ -21,9 +21,8 @@ typedef struct {
 
 typedef struct {
     bool is_running;
-    bool is_waiting_for_transmit;
-    bool is_transmit_finished;
-    bool is_transmit_sent;
+    bool is_transfer_pending;
+    bool is_transfer_complete;
 
     packet_config_t config;
 
