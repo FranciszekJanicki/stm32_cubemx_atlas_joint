@@ -6,7 +6,7 @@
 #include "task.h"
 #include <stdint.h>
 
-#define PACKET_TASK_STACK_DEPTH (6000U / sizeof(StackType_t))
+#define PACKET_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
 #define PACKET_TASK_PRIORITY (1U)
 #define PACKET_TASK_NAME ("packet_task")
 
@@ -62,7 +62,7 @@ static QueueHandle_t packet_task_create_queue(void)
 static void packet_task_packet_test_timer_callback(TimerHandle_t timer)
 {
     xTaskNotify(task_manager_get(TASK_TYPE_PACKET),
-                PACKET_NOTIFY_JOINT_PACKET_READY,
+                PACKET_NOTIFY_SLAVE_SELECT,
                 eSetBits);
 }
 
@@ -111,11 +111,11 @@ atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-void packet_task_joint_packet_ready_callback(void)
+void packet_task_slave_select_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_PACKET),
-                       PACKET_NOTIFY_JOINT_PACKET_READY,
+                       PACKET_NOTIFY_SLAVE_SELECT,
                        eSetBits,
                        &task_woken);
 

@@ -1,4 +1,4 @@
-git@github.com:FranciszekJanicki/a4988.git submodules/a4988
+git@github.com:FranciszekJanicki/drv8825.git submodules/drv8825
 git@github.com:FranciszekJanicki/as5600.git submodules/as5600
 git@github.com:FranciszekJanicki/ina226.git submodules/ina226
 git@github.com:FranciszekJanicki/step_motor.git submodules/step_motor

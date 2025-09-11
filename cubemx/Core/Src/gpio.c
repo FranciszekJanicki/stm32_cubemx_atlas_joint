@@ -63,11 +63,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(JOINT_DATA_READY_PIN_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : JOINT_DELTA_ELAPSED_PIN_Pin JOINT_CHIP_SELECT_PIN_Pin */
-  GPIO_InitStruct.Pin = JOINT_DELTA_ELAPSED_PIN_Pin|JOINT_CHIP_SELECT_PIN_Pin;
+  /*Configure GPIO pin : JOINT_DELTA_ELAPSED_PIN_Pin */
+  GPIO_InitStruct.Pin = JOINT_DELTA_ELAPSED_PIN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(JOINT_DELTA_ELAPSED_PIN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DRV8825_DIR_PIN_Pin AS5600_DIR_PIN_Pin */
   GPIO_InitStruct.Pin = DRV8825_DIR_PIN_Pin|AS5600_DIR_PIN_Pin;

@@ -1,7 +1,7 @@
 #include "joint_manager.h"
 #include "FreeRTOS.h"
-#include "a4988.h"
 #include "common.h"
+#include "drv8825.h"
 #include "event.h"
 #include "manager.h"
 #include "motor_driver.h"
@@ -48,59 +48,60 @@ static inline bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
     return true;
 }
 
-static inline a4988_err_t a4988_gpio_initialize(void* user)
+static inline drv8825_err_t drv8825_gpio_initialize(void* user)
 {
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_gpio_deinitialize(void* user)
+static inline drv8825_err_t drv8825_gpio_deinitialize(void* user)
 {
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_gpio_write_pin(void* user,
-                                               uint32_t pin,
-                                               bool state)
+static inline drv8825_err_t drv8825_gpio_write_pin(void* user,
+                                                   uint32_t pin,
+                                                   bool state)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_GPIO_WritePin(config->a4988_dir_gpio,
-                      config->a4988_dir_pin,
+    HAL_GPIO_WritePin(config->drv8825_dir_gpio,
+                      config->drv8825_dir_pin,
                       (GPIO_PinState)state);
 
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_pwm_initialize(void* user)
+static inline drv8825_err_t drv8825_pwm_initialize(void* user)
 {
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_pwm_deinitialize(void* user)
+static inline drv8825_err_t drv8825_pwm_deinitialize(void* user)
 {
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_pwm_start(void* user)
-{
-    joint_config_t* config = (joint_config_t*)user;
-
-    HAL_TIM_PWM_Start_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
-
-    return A4988_ERR_OK;
-}
-
-static inline a4988_err_t a4988_pwm_stop(void* user)
+static inline drv8825_err_t drv8825_pwm_start(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_TIM_PWM_Stop_IT(config->a4988_pwm_timer, config->a4988_pwm_channel);
+    HAL_TIM_PWM_Start_IT(config->drv8825_pwm_timer,
+                         config->drv8825_pwm_channel);
 
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
-static inline a4988_err_t a4988_pwm_set_frequency(void* user,
-                                                  uint32_t frequency)
+static inline drv8825_err_t drv8825_pwm_stop(void* user)
+{
+    joint_config_t* config = (joint_config_t*)user;
+
+    HAL_TIM_PWM_Stop_IT(config->drv8825_pwm_timer, config->drv8825_pwm_channel);
+
+    return DRV8825_ERR_OK;
+}
+
+static inline drv8825_err_t drv8825_pwm_set_frequency(void* user,
+                                                      uint32_t frequency)
 {
     joint_config_t* config = (joint_config_t*)user;
 
@@ -128,14 +129,14 @@ static inline a4988_err_t a4988_pwm_set_frequency(void* user,
             compare = period;
         }
 
-        __HAL_TIM_DISABLE(config->a4988_pwm_timer);
-        __HAL_TIM_SET_COUNTER(config->a4988_pwm_timer, 0U);
-        __HAL_TIM_SET_PRESCALER(config->a4988_pwm_timer, prescaler);
-        __HAL_TIM_SET_AUTORELOAD(config->a4988_pwm_timer, period);
-        __HAL_TIM_SET_COMPARE(config->a4988_pwm_timer,
-                              config->a4988_pwm_channel,
+        __HAL_TIM_DISABLE(config->drv8825_pwm_timer);
+        __HAL_TIM_SET_COUNTER(config->drv8825_pwm_timer, 0U);
+        __HAL_TIM_SET_PRESCALER(config->drv8825_pwm_timer, prescaler);
+        __HAL_TIM_SET_AUTORELOAD(config->drv8825_pwm_timer, period);
+        __HAL_TIM_SET_COMPARE(config->drv8825_pwm_timer,
+                              config->drv8825_pwm_channel,
                               compare);
-        __HAL_TIM_ENABLE(config->a4988_pwm_timer);
+        __HAL_TIM_ENABLE(config->drv8825_pwm_timer);
 
         ATLAS_LOG(TAG,
                   "frequency: %u, period: %u, prescaler: %u, compare: %u",
@@ -145,7 +146,7 @@ static inline a4988_err_t a4988_pwm_set_frequency(void* user,
                   compare);
     }
 
-    return A4988_ERR_OK;
+    return DRV8825_ERR_OK;
 }
 
 static inline as5600_err_t as5600_gpio_initialize(void* user)
@@ -251,13 +252,6 @@ static inline as5600_err_t as5600_initialize_chip(as5600_t* as5600,
 
     uint16_t min_raw = (uint16_t)(min_angle / angle_range * 4095.0F);
     uint16_t max_raw = (uint16_t)(max_angle / angle_range * 4095.0F);
-
-    ATLAS_LOG(TAG,
-              "AS5600 min angle: %f, max angle: %f, min raw: %u, max raw: %u",
-              min_angle,
-              max_angle,
-              min_raw,
-              max_raw);
 
     as5600_zpos_reg_t zpos = {.zpos = min_raw & 0x0FFF};
     err = as5600_set_zpos_reg(as5600, &zpos);
@@ -386,7 +380,7 @@ static inline step_motor_err_t step_motor_device_set_frequency(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    a4988_set_frequency(&manager->a4988, frequency);
+    drv8825_set_frequency(&manager->drv8825, frequency);
 
     return STEP_MOTOR_ERR_OK;
 }
@@ -399,7 +393,7 @@ static inline step_motor_err_t step_motor_device_set_direction(
 
     joint_manager_t* manager = (joint_manager_t*)user;
 
-    a4988_set_direction(&manager->a4988, (a4988_direction_t)direction);
+    drv8825_set_direction(&manager->drv8825, (drv8825_direction_t)direction);
 
     return STEP_MOTOR_ERR_OK;
 }
@@ -795,17 +789,17 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
                            parameters->max_position,
                            parameters->magnet_polarity);
 
-    a4988_initialize(
-        &manager->a4988,
-        &(a4988_config_t){},
-        &(a4988_interface_t){.gpio_user = &manager->config,
-                             .gpio_initialize = a4988_gpio_initialize,
-                             .gpio_deinitialize = a4988_gpio_deinitialize,
-                             .gpio_write_pin = a4988_gpio_write_pin,
-                             .pwm_user = &manager->config,
-                             .pwm_start = a4988_pwm_start,
-                             .pwm_stop = a4988_pwm_stop,
-                             .pwm_set_frequency = a4988_pwm_set_frequency});
+    drv8825_initialize(
+        &manager->drv8825,
+        &(drv8825_config_t){},
+        &(drv8825_interface_t){.gpio_user = &manager->config,
+                               .gpio_initialize = drv8825_gpio_initialize,
+                               .gpio_deinitialize = drv8825_gpio_deinitialize,
+                               .gpio_write_pin = drv8825_gpio_write_pin,
+                               .pwm_user = &manager->config,
+                               .pwm_start = drv8825_pwm_start,
+                               .pwm_stop = drv8825_pwm_stop,
+                               .pwm_set_frequency = drv8825_pwm_set_frequency});
 
     step_motor_initialize(
         &manager->motor,

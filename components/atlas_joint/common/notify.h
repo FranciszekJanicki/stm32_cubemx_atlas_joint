@@ -19,8 +19,8 @@ typedef enum {
 } joint_notify_t;
 
 typedef enum {
-    PACKET_NOTIFY_JOINT_PACKET_READY = (1 << 0),
-    PACKET_NOTIFY_ALL = (PACKET_NOTIFY_JOINT_PACKET_READY),
+    PACKET_NOTIFY_SLAVE_SELECT = (1 << 0),
+    PACKET_NOTIFY_ALL = (PACKET_NOTIFY_SLAVE_SELECT),
 } packet_notify_t;
 
 typedef enum {

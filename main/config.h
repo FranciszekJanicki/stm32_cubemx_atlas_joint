@@ -208,8 +208,8 @@ extern TIM_HandleTypeDef htim4;
 
 #define PACKET_SPI_BUS (&hspi1)
 
-#define JOINT_CHIP_SELECT_GPIO (GPIOB)
-#define JOINT_CHIP_SELECT_PIN (1U << 14U)
+#define JOINT_SLAVE_SELECT_GPIO (GPIOB)
+#define JOINT_SLAVE_SELECT_PIN (1U << 14U)
 
 #define JOINT_DELTA_ELAPSED_GPIO (GPIOB)
 #define JOINT_DELTA_ELAPSED_PIN (1U << 13U)
@@ -218,7 +218,7 @@ extern TIM_HandleTypeDef htim4;
 #define JOINT_DATA_READY_PIN (1U << 12U)
 
 #define JOINT_DELTA_ELAPSED_DEBOUNCE_TIMER (&htim1)
-#define JOINT_CHIP_SELECT_DEBOUNCE_TIMER (&htim3)
+#define JOINT_SLAVE_SELECT_DEBOUNCE_TIMER (&htim3)
 
 #define AS5600_I2C_ADDRESS (0x36U)
 #define AS5600_I2C_BUS (&hi2c1)
@@ -229,11 +229,11 @@ extern TIM_HandleTypeDef htim4;
 #define INA226_I2C_BUS (&hi2c1)
 #define INA226_I2C_ADDRESS (0x40U)
 
-#define A4988_PWM_TIMER (&htim2)
-#define A4988_PWM_CHANNEL (TIM_CHANNEL_1)
+#define DRV8825_PWM_TIMER (&htim2)
+#define DRV8825_PWM_CHANNEL (TIM_CHANNEL_1)
 
-#define A4988_DIR_GPIO (GPIOA)
-#define A4988_DIR_PIN (1U << 9U)
+#define DRV8825_DIR_GPIO (GPIOA)
+#define DRV8825_DIR_PIN (1U << 9U)
 
 #define WINDOW_WATCHDOG (&hwwdg)
 

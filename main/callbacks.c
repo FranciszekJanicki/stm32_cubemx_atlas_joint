@@ -10,17 +10,17 @@
 #include "system_task.h"
 #include "wwdg.h"
 
-static inline void joint_chip_select_debounce_timer_callback(void)
+static inline void joint_slave_select_debounce_timer_callback(void)
 {
     static uint8_t debounce_counter = 0U;
 
-    if (HAL_GPIO_ReadPin(JOINT_CHIP_SELECT_GPIO, JOINT_CHIP_SELECT_PIN) ==
+    if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
         GPIO_PIN_RESET) {
         if (debounce_counter++ >= 3U) {
             debounce_counter = 0U;
 
-            packet_task_joint_packet_ready_callback();
-            HAL_TIM_Base_Stop_IT(JOINT_CHIP_SELECT_DEBOUNCE_TIMER);
+            packet_task_slave_select_callback();
+            HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
         }
     }
 }
@@ -60,8 +60,8 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
 {
     if (htim->Instance == SYSTICK_TIMER->Instance) {
         HAL_IncTick();
-    } else if (htim->Instance == JOINT_CHIP_SELECT_DEBOUNCE_TIMER->Instance) {
-        joint_chip_select_debounce_timer_callback();
+    } else if (htim->Instance == JOINT_SLAVE_SELECT_DEBOUNCE_TIMER->Instance) {
+        joint_slave_select_debounce_timer_callback();
     } else if (htim->Instance == JOINT_DELTA_ELAPSED_DEBOUNCE_TIMER->Instance) {
         joint_delta_elapsed_debounce_timer_callback();
     } else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {
@@ -72,17 +72,17 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
 __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(
     TIM_HandleTypeDef* htim)
 {
-    if (htim->Instance == A4988_PWM_TIMER->Instance) {
+    if (htim->Instance == DRV8825_PWM_TIMER->Instance) {
         joint_task_pwm_pulse_callback();
     }
 }
 
-static inline void joint_chip_select_exti_callback(void)
+static inline void joint_slave_select_exti_callback(void)
 {
-    if (HAL_GPIO_ReadPin(JOINT_CHIP_SELECT_GPIO, JOINT_CHIP_SELECT_PIN) ==
+    if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
         GPIO_PIN_RESET) {
-        HAL_TIM_Base_Stop_IT(JOINT_CHIP_SELECT_DEBOUNCE_TIMER);
-        HAL_TIM_Base_Start_IT(JOINT_CHIP_SELECT_DEBOUNCE_TIMER);
+        HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
+        HAL_TIM_Base_Start_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
     }
 }
 
@@ -97,8 +97,8 @@ static inline void joint_delta_elapsed_exti_callback(void)
 
 __attribute__((used)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_Pin == JOINT_CHIP_SELECT_PIN) {
-        joint_chip_select_exti_callback();
+    if (GPIO_Pin == JOINT_SLAVE_SELECT_PIN) {
+        joint_slave_select_exti_callback();
     } else if (GPIO_Pin == JOINT_DELTA_ELAPSED_PIN) {
         joint_delta_elapsed_exti_callback();
     }
