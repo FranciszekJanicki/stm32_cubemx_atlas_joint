@@ -53,30 +53,57 @@ static QueueHandle_t packet_task_create_queue(void)
                               &packet_queue_buffer);
 }
 
-#ifdef PACKET_TEST
-#define PACKET_TEST_TIMER_NAME ("packet_test_timer")
-#define PACKET_TEST_TIMER_PERIOD (pdMS_TO_TICKS(1000))
-#define PACKET_TEST_TIMER_AUTORELOAD (pdTRUE)
-#define PACKET_TEST_TIMER_ID (NULL)
+#ifdef JOINT_PACKET_TEST
+#define JOINT_PACKET_TEST_TIMER_NAME ("packet_test_timer")
+#define JOINT_PACKET_TEST_TIMER_PERIOD (pdMS_TO_TICKS(1000))
+#define JOINT_PACKET_TEST_TIMER_AUTORELOAD (pdTRUE)
+#define JOINT_PACKET_TEST_TIMER_ID (NULL)
 
-static void packet_task_packet_test_timer_callback(TimerHandle_t timer)
+static void packet_task_joint_packet_test_timer_callback(TimerHandle_t timer)
 {
     xTaskNotify(task_manager_get(TASK_TYPE_PACKET),
                 PACKET_NOTIFY_SLAVE_SELECT,
                 eSetBits);
 }
 
-static TimerHandle_t packet_task_create_packet_test_timer(
+static TimerHandle_t packet_task_create_joint_packet_test_timer(
     packet_task_ctx_t* task_ctx)
 {
-    static StaticTimer_t packet_test_timer_buffer;
+    static StaticTimer_t joint_packet_test_timer_buffer;
 
-    return xTimerCreateStatic(PACKET_TEST_TIMER_NAME,
-                              PACKET_TEST_TIMER_PERIOD,
-                              PACKET_TEST_TIMER_AUTORELOAD,
-                              PACKET_TEST_TIMER_ID,
-                              packet_task_packet_test_timer_callback,
-                              &packet_test_timer_buffer);
+    return xTimerCreateStatic(JOINT_PACKET_TEST_TIMER_NAME,
+                              JOINT_PACKET_TEST_TIMER_PERIOD,
+                              JOINT_PACKET_TEST_TIMER_AUTORELOAD,
+                              JOINT_PACKET_TEST_TIMER_ID,
+                              packet_task_joint_packet_test_timer_callback,
+                              &joint_packet_test_timer_buffer);
+}
+#endif
+
+#ifdef ROBOT_PACKET_TEST
+#define ROBOT_PACKET_TEST_TIMER_NAME ("packet_test_timer")
+#define ROBOT_PACKET_TEST_TIMER_PERIOD (pdMS_TO_TICKS(1000))
+#define ROBOT_PACKET_TEST_TIMER_AUTORELOAD (pdTRUE)
+#define ROBOT_PACKET_TEST_TIMER_ID (NULL)
+
+static void packet_task_robot_packet_test_timer_callback(TimerHandle_t timer)
+{
+    xTaskNotify(task_manager_get(TASK_TYPE_PACKET),
+                PACKET_NOTIFY_SLAVE_SELECT,
+                eSetBits);
+}
+
+static TimerHandle_t packet_task_create_robot_packet_test_timer(
+    packet_task_ctx_t* task_ctx)
+{
+    static StaticTimer_t robot_packet_test_timer_buffer;
+
+    return xTimerCreateStatic(ROBOT_PACKET_TEST_TIMER_NAME,
+                              ROBOT_PACKET_TEST_TIMER_PERIOD,
+                              ROBOT_PACKET_TEST_TIMER_AUTORELOAD,
+                              ROBOT_PACKET_TEST_TIMER_ID,
+                              packet_task_robot_packet_test_timer_callback,
+                              &robot_packet_test_timer_buffer);
 }
 #endif
 
@@ -84,14 +111,24 @@ atlas_err_t packet_task_initialize(packet_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-#ifdef PACKET_TEST
-    TimerHandle_t packet_test_timer =
-        packet_task_create_packet_test_timer(task_ctx);
-    if (packet_test_timer == NULL) {
+#ifdef JOINT_PACKET_TEST
+    TimerHandle_t joint_packet_test_timer =
+        packet_task_create_joint_packet_test_timer(task_ctx);
+    if (joint_packet_test_timer == NULL) {
         return ATLAS_ERR_FAIL;
     }
 
-    timer_manager_set(TIMER_TYPE_PACKET_TEST, packet_test_timer);
+    timer_manager_set(TIMER_TYPE_JOINT_PACKET_TEST, joint_packet_test_timer);
+#endif
+
+#ifdef ROBOT_PACKET_TEST
+    TimerHandle_t robot_packet_test_timer =
+        packet_task_create_robot_packet_test_timer(task_ctx);
+    if (robot_packet_test_timer == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    timer_manager_set(TIMER_TYPE_ROBOT_PACKET_TEST, robot_packet_test_timer);
 #endif
 
     QueueHandle_t packet_queue = packet_task_create_queue();

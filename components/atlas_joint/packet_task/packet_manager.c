@@ -264,18 +264,33 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-#ifdef PACKET_TEST
-    system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
-                            .origin = SYSTEM_EVENT_ORIGIN_PACKET};
+#ifdef JOINT_PACKET_TEST
+    static int i = 0;
+    if (i == 0) {
+        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_START,
+                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
+        packet_manager_send_system_event(&event);
+    } else if (i == 100) {
+        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_STOP,
+                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
 
-    event.payload.joint_reference.position = 300.0F;
-    event.payload.joint_reference.delta_time = 0.001F;
-    packet_manager_send_system_event(&event);
+        packet_manager_send_system_event(&event);
+        i = 0;
+    } else {
+        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
+                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
+
+        event.payload.joint_reference.position = 300.0F;
+        event.payload.joint_reference.delta_time = 0.001F;
+        packet_manager_send_system_event(&event);
+    }
+
+    i++;
 #else
 
     if (manager->is_transfer_pending && !manager->is_transfer_complete) {
         if (!packet_manager_send_robot_packet(manager)) {
-            return false;
+            return ATLAS_ERR_FAIL;
         }
     } else if (!manager->is_transfer_pending && manager->is_transfer_complete) {
         packet_manager_deassert_data_ready(manager);
@@ -340,8 +355,14 @@ static atlas_err_t packet_manager_event_start_handler(
 
     manager->is_running = true;
 
-#ifdef PACKET_TEST
-    xTimerStart(timer_manager_get(TIMER_TYPE_PACKET_TEST), pdMS_TO_TICKS(1));
+#ifdef JOINT_PACKET_TEST
+    xTimerStart(timer_manager_get(TIMER_TYPE_JOINT_PACKET_TEST),
+                pdMS_TO_TICKS(1));
+#endif
+
+#ifdef ROBOT_PACKET_TEST
+    xTimerStart(timer_manager_get(TIMER_TYPE_ROBOT_PACKET_TEST),
+                pdMS_TO_TICKS(1));
 #endif
 
     return ATLAS_ERR_OK;
@@ -359,6 +380,16 @@ static atlas_err_t packet_manager_event_stop_handler(
     }
 
     manager->is_running = false;
+
+#ifdef JOINT_PACKET_TEST
+    xTimerStop(timer_manager_get(TIMER_TYPE_JOINT_PACKET_TEST),
+               pdMS_TO_TICKS(1));
+#endif
+
+#ifdef ROBOT_PACKET_TEST
+    xTimerStop(timer_manager_get(TIMER_TYPE_ROBOT_PACKET_TEST),
+               pdMS_TO_TICKS(1));
+#endif
 
     return ATLAS_ERR_OK;
 }
@@ -380,7 +411,7 @@ static atlas_err_t packet_manager_event_joint_measure_handler(
     packet.timestamp = joint_measure->timestamp;
     packet.payload.joint_measure = joint_measure->measure;
 
-#ifndef PACKET_TEST
+#ifndef JOINT_PACKET_TEST
     packet_manager_prepare_robot_packet(manager, &packet);
 #endif
 
@@ -424,7 +455,7 @@ static atlas_err_t packet_manager_event_joint_ready_handler(
     packet.timestamp = joint_ready->timestamp;
     packet.payload.joint_ready = joint_ready->ready;
 
-#ifdef PACKET_TEST
+#ifdef JOINT_PACKET_TEST
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_START};
     packet_manager_send_system_event(&event);
@@ -495,13 +526,16 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
 {
     ATLAS_ASSERT(manager && config);
 
-    manager->is_running = false;
     manager->config = *config;
+    manager->is_running = false;
+    manager->is_transfer_complete = false;
+    manager->is_transfer_pending = false;
 
     memset(manager->receive_buffer, 0, sizeof(manager->receive_buffer));
     memset(manager->transmit_buffer, 0, sizeof(manager->transmit_buffer));
 
-    packet_manager_set_data_ready_pin(manager, true);
+    packet_manager_packet_spi_transfer(manager);
+    packet_manager_deassert_data_ready(manager);
 
     if (!packet_manager_send_system_notify(SYSTEM_NOTIFY_PACKET_READY)) {
         return ATLAS_ERR_FAIL;

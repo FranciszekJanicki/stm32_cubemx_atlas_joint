@@ -34,8 +34,8 @@ static inline void joint_delta_elapsed_debounce_timer_callback(void)
         if (debounce_counter++ >= 3U) {
             debounce_counter = 0U;
 
-            joint_task_delta_elapsed_callback();
             HAL_TIM_Base_Stop_IT(JOINT_DELTA_ELAPSED_DEBOUNCE_TIMER);
+            joint_task_delta_elapsed_callback();
         }
     }
 }
@@ -79,11 +79,11 @@ __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(
 
 static inline void joint_slave_select_exti_callback(void)
 {
-    if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
-        GPIO_PIN_RESET) {
-        HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
-        HAL_TIM_Base_Start_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
-    }
+    // if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
+    //     GPIO_PIN_RESET) {
+    //     HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
+    //     HAL_TIM_Base_Start_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
+    // }
 }
 
 static inline void joint_delta_elapsed_exti_callback(void)

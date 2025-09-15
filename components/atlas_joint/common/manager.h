@@ -37,7 +37,8 @@ typedef enum {
 } SemaphoreType_t;
 
 typedef enum {
-    TIMER_TYPE_PACKET_TEST,
+    TIMER_TYPE_JOINT_PACKET_TEST,
+    TIMER_TYPE_ROBOT_PACKET_TEST,
     TIMER_TYPE_DELTA_TEST,
     TIMER_TYPE_NUM,
 } TimerType_t;

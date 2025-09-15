@@ -60,7 +60,7 @@ static inline bool system_manager_get_rtc_timestamp(
     ATLAS_ASSERT(manager && timestamp);
 
     RTC_TimeTypeDef rtc_time;
-    if (HAL_RTC_SetTime(manager->config.timestamp_rtc,
+    if (HAL_RTC_GetTime(manager->config.timestamp_rtc,
                         &rtc_time,
                         RTC_FORMAT_BIN) != HAL_OK) {
         return false;
@@ -71,7 +71,7 @@ static inline bool system_manager_get_rtc_timestamp(
     timestamp->second = rtc_time.Seconds;
 
     RTC_DateTypeDef rtc_date;
-    if (HAL_RTC_SetDate(manager->config.timestamp_rtc,
+    if (HAL_RTC_GetDate(manager->config.timestamp_rtc,
                         &rtc_date,
                         RTC_FORMAT_BIN) != HAL_OK) {
         return false;
@@ -175,9 +175,17 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
     ATLAS_ASSERT(manager);
     ATLAS_LOG_FUNC(TAG);
 
-    manager->is_joint_ready = true;
+    if (manager->is_joint_start_pending) {
+        joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
+        event.payload.start = (joint_event_payload_start_t){};
 
-    if (manager->is_packet_running) {
+        if (!system_manager_send_joint_event(manager, &event)) {
+            return ATLAS_ERR_FAIL;
+        }
+
+        manager->is_joint_running = true;
+        manager->is_joint_start_pending = false;
+    } else if (manager->is_packet_running) {
         packet_event_t event = {.type = PACKET_EVENT_TYPE_JOINT_READY};
         event.payload.joint_ready = (packet_event_payload_joint_ready_t){};
 
@@ -185,6 +193,8 @@ static atlas_err_t system_manager_notify_joint_ready_handler(
             return ATLAS_ERR_FAIL;
         }
     }
+
+    manager->is_joint_ready = true;
 
     return ATLAS_ERR_OK;
 }
@@ -230,14 +240,23 @@ static atlas_err_t system_manager_event_joint_start_handler(
     ATLAS_ASSERT(manager && joint_start);
     ATLAS_LOG_FUNC(TAG);
 
-    joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
-    event.payload.start = (joint_event_payload_start_t){};
-
-    if (!system_manager_send_joint_event(manager, &event)) {
-        return ATLAS_ERR_FAIL;
+    if (manager->is_joint_running) {
+        return ATLAS_ERR_ALREADY_RUNNING;
     }
 
-    manager->is_joint_running = true;
+    if (manager->is_joint_ready) {
+        joint_event_t event = {.type = JOINT_EVENT_TYPE_START};
+        event.payload.start = (joint_event_payload_start_t){};
+
+        if (!system_manager_send_joint_event(manager, &event)) {
+            return ATLAS_ERR_FAIL;
+        }
+
+        manager->is_joint_running = true;
+        manager->is_joint_start_pending = false;
+    } else {
+        manager->is_joint_start_pending = true;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -370,6 +389,7 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     manager->is_packet_running = false;
     manager->is_joint_running = false;
     manager->is_joint_ready = false;
+    manager->is_joint_start_pending = false;
 
     memcpy(&manager->config, config, sizeof(*config));
     memset(&manager->startup_timestamp, 0, sizeof(manager->startup_timestamp));

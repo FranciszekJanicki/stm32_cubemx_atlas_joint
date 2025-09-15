@@ -671,6 +671,12 @@ static atlas_err_t joint_manager_event_stop_handler(
 
     manager->is_running = false;
 
+#ifdef DELTA_TEST
+    manager->reference.delta_time = 0.01F;
+    manager->reference.position = 100.0F;
+    xTimerStop(timer_manager_get(TIMER_TYPE_DELTA_TEST), pdMS_TO_TICKS(1));
+#endif
+
     return ATLAS_ERR_OK;
 }
 

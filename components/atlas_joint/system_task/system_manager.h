@@ -21,6 +21,7 @@ typedef struct {
     bool is_joint_running;
     bool is_packet_running;
     bool is_joint_ready;
+    bool is_joint_start_pending;
 
     atlas_timestamp_t current_timestamp;
     atlas_timestamp_t startup_timestamp;

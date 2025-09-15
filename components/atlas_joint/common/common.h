@@ -6,8 +6,10 @@
 #include "manager.h"
 #include "notify.h"
 
-// #define PACKET_TEST
-// #define DELTA_TEST
+#define JOINT_PACKET_TEST
+#define ROBOT_PACKET_TEST
+
+#define DELTA_TEST
 
 // #define USE_UART
 // #define USE_WATCHDOG
