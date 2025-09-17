@@ -286,8 +286,19 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
     }
 
     i++;
-#else
 
+#endif
+
+#ifdef ROBOT_PACKET_TEST
+    atlas_robot_packet_t packet = {.type =
+                                       ATLAS_ROBOT_PACKET_TYPE_JOINT_MEASURE};
+    packet.origin = ATLAS_JOINT_NUM_1;
+    packet.payload.joint_measure.current = 1.0F;
+    packet.payload.joint_measure.position = 300.0F;
+    packet_manager_prepare_robot_packet(manager, &packet);
+#endif
+
+#if !defined(JOINT_PACKET_TEST) && !defined(ROBOT_PACKET_TEST)
     if (manager->is_transfer_pending && !manager->is_transfer_complete) {
         if (!packet_manager_send_robot_packet(manager)) {
             return ATLAS_ERR_FAIL;
