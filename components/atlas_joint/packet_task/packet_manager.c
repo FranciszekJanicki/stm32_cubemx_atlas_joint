@@ -12,7 +12,7 @@ static char const* const TAG = "packet_manager";
 
 static inline bool packet_manager_has_packet_event(void)
 {
-    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_PACKET));
+    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_PACKET)) > 0U;
 }
 
 static inline bool packet_manager_send_system_event(system_event_t const* event)

@@ -496,8 +496,7 @@ static inline motor_driver_err_t motor_driver_fault_get_current(
 
 static inline bool joint_manager_has_joint_event(void)
 {
-    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_JOINT)) ==
-           pdPASS;
+    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_JOINT)) > 0U;
 }
 
 static inline bool joint_manager_send_system_notify(system_notify_t notify)

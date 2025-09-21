@@ -86,7 +86,7 @@ static inline bool system_manager_get_rtc_timestamp(
 
 static inline bool system_manager_has_system_event(void)
 {
-    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM));
+    return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM)) > 0U;
 }
 
 static inline bool system_manager_send_joint_event(system_manager_t* manager,
