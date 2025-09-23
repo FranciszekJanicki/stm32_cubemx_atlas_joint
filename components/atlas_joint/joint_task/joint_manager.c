@@ -66,7 +66,7 @@ static inline drv8825_err_t drv8825_gpio_write_pin(void* user,
 
     HAL_GPIO_WritePin(config->drv8825_dir_gpio,
                       config->drv8825_dir_pin,
-                      (GPIO_PinState)state);
+                      (GPIO_PinState)!state);
 
     return DRV8825_ERR_OK;
 }
@@ -567,36 +567,37 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
                                0.0F,
                                manager->reference.delta_time);
         manager->has_fault = true;
-    } else {
-        motor_driver_state_t state;
-        motor_driver_get_state(&manager->driver, &state);
 
-        ATLAS_LOG(
-            TAG,
-            "measure position: %f, reference position: %f, error position: "
-            "%f, control speed: %f, fault current: %f",
-            state.measure_position,
-            manager->reference.position,
-            state.measure_position - manager->reference.position,
-            state.control_speed,
-            state.fault_current);
+        return ATLAS_ERR_OK;
+    }
 
-        manager->measure.position = state.measure_position;
-        manager->measure.current = state.fault_current;
+    motor_driver_state_t state;
+    motor_driver_get_state(&manager->driver, &state);
 
-        system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
-        event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
-        event.payload.joint_measure = manager->measure;
+    ATLAS_LOG(TAG,
+              "measure position: %f, reference position: %f, error position: "
+              "%f, control speed: %f, fault current: %f",
+              state.measure_position,
+              manager->reference.position,
+              state.measure_position - manager->reference.position,
+              state.control_speed,
+              state.fault_current);
 
-        if (!joint_manager_send_system_event(&event)) {
-            return ATLAS_ERR_FAIL;
-        }
+    manager->measure.position = state.measure_position;
+    manager->measure.current = state.fault_current;
 
-        atlas_joint_measure_print(&manager->measure);
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
+    event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
+    event.payload.joint_measure = manager->measure;
 
-        if (manager->has_fault) {
-            manager->has_fault = false;
-        }
+    if (!joint_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    atlas_joint_measure_print(&manager->measure);
+
+    if (manager->has_fault) {
+        manager->has_fault = false;
     }
 
     return ATLAS_ERR_OK;
@@ -831,11 +832,11 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
         return ATLAS_ERR_FAIL;
     }
 
-    while (1) {
-        drv8825_set_frequency(&manager->drv8825, 50U);
-        drv8825_set_direction(&manager->drv8825, DRV8825_DIRECTION_BACKWARD);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
+    // while (1) {
+    //     drv8825_set_direction(&manager->drv8825, DRV8825_DIRECTION_BACKWARD);
+    //     drv8825_set_frequency(&manager->drv8825, 50U);
+    //     vTaskDelay(pdMS_TO_TICKS(10));
+    // }
 
     if (step_motor_initialize(
             &manager->motor,
