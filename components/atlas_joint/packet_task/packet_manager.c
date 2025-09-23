@@ -280,7 +280,7 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
         system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
                                 .origin = SYSTEM_EVENT_ORIGIN_PACKET};
 
-        event.payload.joint_reference.position = 300.0F;
+        event.payload.joint_reference.position = 10.0F;
         event.payload.joint_reference.delta_time = 0.001F;
         packet_manager_send_system_event(&event);
     }
