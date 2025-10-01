@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static char const* const TAG = "watchdog_manager";
+static char const* const TAG = "atlas_joint:watchdog_manager";
 
 static inline bool watchdog_manager_reset_window_watchdog(
     watchdog_manager_t* manager)

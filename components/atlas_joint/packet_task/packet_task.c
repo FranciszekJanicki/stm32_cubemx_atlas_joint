@@ -8,7 +8,7 @@
 
 #define PACKET_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
 #define PACKET_TASK_PRIORITY (1U)
-#define PACKET_TASK_NAME ("packet_task")
+#define PACKET_TASK_NAME ("atlas_joint:packet_task")
 
 #define PACKET_QUEUE_ITEMS (10U)
 #define PACKET_QUEUE_ITEM_SIZE (sizeof(packet_event_t))
@@ -24,7 +24,7 @@ static void packet_task_func(void* ctx)
 
     while (1) {
         ATLAS_LOG_ON_ERR(PACKET_TASK_NAME, packet_manager_process(&manager));
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ATLAS_DELAY(10);
     }
 }
 

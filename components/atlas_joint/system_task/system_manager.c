@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static char const* const TAG = "system_manager";
+static char const* const TAG = "atlas_joint:system_manager";
 
 static inline bool system_manager_get_delta_timer_pin(system_manager_t* manager)
 {

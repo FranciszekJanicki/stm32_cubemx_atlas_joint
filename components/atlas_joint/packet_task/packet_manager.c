@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static char const* const TAG = "packet_manager";
+static char const* const TAG = "atlas_joint:packet_manager";
 
 static inline bool packet_manager_has_packet_event(void)
 {
@@ -53,11 +53,15 @@ static inline bool packet_manager_packet_spi_transfer(packet_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
 
+    size_t transfer_size =
+        sizeof(manager->transmit_buffer) > sizeof(manager->receive_buffer)
+            ? sizeof(manager->transmit_buffer)
+            : sizeof(manager->receive_buffer);
+
     return HAL_SPI_TransmitReceive_IT(manager->config.packet_spi_bus,
                                       manager->transmit_buffer,
                                       manager->receive_buffer,
-                                      sizeof(manager->transmit_buffer)) ==
-           HAL_OK;
+                                      transfer_size) == HAL_OK;
 }
 
 static inline bool packet_manager_packet_spi_transmit(packet_manager_t* manager)

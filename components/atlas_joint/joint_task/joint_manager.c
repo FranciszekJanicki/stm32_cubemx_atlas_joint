@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static char const* const TAG = "joint_manager";
+static char const* const TAG = "atlas_joint:joint_manager";
 
 static inline bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
                                                      uint32_t clock_hz,
@@ -180,11 +180,11 @@ static inline as5600_err_t as5600_adc_deinitialize(void* user)
 static inline as5600_err_t as5600_bus_initialize(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
-
+    ATLAS_LOG(TAG, "as5600 i2c address: %u", config->as5600_i2c_address);
     return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
                                  config->as5600_i2c_address << 1U,
                                  10U,
-                                 100U) == HAL_OK
+                                 HAL_MAX_DELAY) == HAL_OK
                ? AS5600_ERR_OK
                : AS5600_ERR_FAIL;
 }
@@ -831,12 +831,6 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
         return ATLAS_ERR_FAIL;
     }
-
-    // while (1) {
-    //     drv8825_set_direction(&manager->drv8825, DRV8825_DIRECTION_BACKWARD);
-    //     drv8825_set_frequency(&manager->drv8825, 50U);
-    //     vTaskDelay(pdMS_TO_TICKS(10));
-    // }
 
     if (step_motor_initialize(
             &manager->motor,

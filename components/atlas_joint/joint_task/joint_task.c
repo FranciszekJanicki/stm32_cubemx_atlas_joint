@@ -8,7 +8,7 @@
 
 #define JOINT_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
 #define JOINT_TASK_PRIORITY (1U)
-#define JOINT_TASK_NAME ("joint_task")
+#define JOINT_TASK_NAME ("atlas_joint:joint_task")
 
 #define JOINT_QUEUE_ITEMS (10U)
 #define JOINT_QUEUE_ITEM_SIZE (sizeof(joint_event_t))
@@ -26,7 +26,7 @@ static void joint_task_func(void* ctx)
 
     while (1) {
         ATLAS_LOG_ON_ERR(JOINT_TASK_NAME, joint_manager_process(&manager));
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ATLAS_DELAY(10);
     }
 }
 

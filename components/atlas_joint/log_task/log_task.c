@@ -10,7 +10,7 @@
 
 #define LOG_TASK_STACK_DEPTH (4096U / sizeof(StackType_t))
 #define LOG_TASK_PRIORITY (1U)
-#define LOG_TASK_NAME ("log_task")
+#define LOG_TASK_NAME ("atlas_joint:log_task")
 
 #define LOG_BUFFER_STORAGE_SIZE (1024U)
 

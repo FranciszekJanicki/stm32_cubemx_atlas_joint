@@ -8,7 +8,7 @@
 
 #define WATCHDOG_TASK_STACK_DEPTH (6000U / sizeof(StackType_t))
 #define WATCHDOG_TASK_PRIORITY (1U)
-#define WATCHDOG_TASK_NAME ("watchdog_task")
+#define WATCHDOG_TASK_NAME ("atlas_joint:watchdog_task")
 
 #define WATCHDOG_QUEUE_ITEMS (10U)
 #define WATCHDOG_QUEUE_ITEM_SIZE (sizeof(watchdog_event_t))
@@ -26,7 +26,7 @@ static void watchdog_task_func(void* ctx)
     while (1) {
         ATLAS_LOG_ON_ERR(WATCHDOG_TASK_NAME,
                          watchdog_manager_process(&manager));
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ATLAS_DELAY(10);
     }
 }
 

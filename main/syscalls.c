@@ -45,6 +45,9 @@ int _read(int file, char* ptr, int len)
     return len;
 }
 
+__attribute__((section(".log_buffer"))) char log_buffer[10000];
+size_t log_buffer_used_len = 0UL;
+
 int _write(int file, char* ptr, int len)
 {
 #ifdef USE_LOG_TASK
@@ -53,9 +56,14 @@ int _write(int file, char* ptr, int len)
 
     return xStreamBufferSend(log_stream_buffer, ptr, len, len);
 #else
+    if (log_buffer_used_len + len < sizeof(log_buffer)) {
+        memcpy(log_buffer + log_buffer_used_len, ptr, len);
+        log_buffer_used_len += len;
+    }
+
     SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
 
-    if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(10))) {
+    if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(len))) {
 #ifdef USE_UART
         HAL_UART_Transmit(LOG_UART_BUS, (uint8_t*)ptr, len, len);
 #else

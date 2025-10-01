@@ -8,7 +8,7 @@
 
 #define SYSTEM_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
 #define SYSTEM_TASK_PRIORITY (1U)
-#define SYSTEM_TASK_NAME ("system_task")
+#define SYSTEM_TASK_NAME ("atlas_joint:system_task")
 
 #define SYSTEM_QUEUE_ITEMS (10U)
 #define SYSTEM_QUEUE_ITEM_SIZE (sizeof(system_event_t))
@@ -24,7 +24,7 @@ static void system_task_func(void* ctx)
 
     while (1) {
         ATLAS_LOG_ON_ERR(SYSTEM_TASK_NAME, system_manager_process(&manager));
-        vTaskDelay(pdMS_TO_TICKS(10));
+        ATLAS_DELAY(10);
     }
 }
 
