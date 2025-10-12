@@ -51,18 +51,6 @@ static atlas_joint_config_t config = {
 
 void SystemClock_Config(void);
 
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
-
-static void dump_log_buffer(void)
-{
-    extern char log_buffer[10000];
-    memcpy(log_buffer, "dump_log_buffer:\n\r", strlen("dump_log_buffer:\n\r"));
-
-    CDC_Transmit_FS((uint8_t*)log_buffer, sizeof(log_buffer));
-    memset(log_buffer, 0, sizeof(log_buffer));
-}
-
 int main(void)
 {
     HAL_Init();
@@ -88,8 +76,6 @@ int main(void)
 #endif
 
     HAL_Delay(500U);
-
-    dump_log_buffer();
 
     atlas_joint_initialize(&config);
 }
