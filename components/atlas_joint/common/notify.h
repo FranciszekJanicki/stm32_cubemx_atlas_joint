@@ -5,11 +5,7 @@
 #include "common.h"
 
 typedef enum {
-    SYSTEM_NOTIFY_JOINT_READY = (1 << 0),
-    SYSTEM_NOTIFY_JOINT_FAULT = (1 << 1),
-    SYSTEM_NOTIFY_PACKET_READY = (1 << 2),
-    SYSTEM_NOTIFY_ALL = (SYSTEM_NOTIFY_JOINT_READY | SYSTEM_NOTIFY_JOINT_FAULT |
-                         SYSTEM_NOTIFY_PACKET_READY),
+    SYSTEM_NOTIFY_ALL = (1 << 0),
 } system_notify_t;
 
 typedef enum {

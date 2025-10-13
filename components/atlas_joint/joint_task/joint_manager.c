@@ -559,7 +559,10 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
                                   manager->reference.delta_time);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
-        if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_FAULT)) {
+        system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                                .type = SYSTEM_EVENT_TYPE_JOINT_FAULT,
+                                .payload.joint_fault = {}};
+        if (!joint_manager_send_system_event(&event)) {
             return ATLAS_ERR_FAIL;
         }
 
@@ -586,10 +589,9 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     manager->measure.position = state.measure_position;
     manager->measure.current = state.fault_current;
 
-    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT};
-    event.type = SYSTEM_EVENT_TYPE_JOINT_MEASURE;
-    event.payload.joint_measure = manager->measure;
-
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_MEASURE,
+                            .payload.joint_measure = manager->measure};
     if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
@@ -685,26 +687,6 @@ static atlas_err_t joint_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t joint_manager_event_reset_handler(
-    joint_manager_t* manager,
-    joint_event_payload_reset_t const* payload)
-{
-    ATLAS_ASSERT(manager && payload);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
-    pid_regulator_reset(&manager->regulator);
-    step_motor_reset(&manager->motor);
-
-    manager->is_running = false;
-    manager->has_fault = false;
-
-    return ATLAS_ERR_OK;
-}
-
 static atlas_err_t joint_manager_event_reference_handler(
     joint_manager_t* manager,
     joint_event_payload_reference_t const* reference)
@@ -716,7 +698,7 @@ static atlas_err_t joint_manager_event_reference_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    manager->reference = *reference;
+    manager->reference = reference->reference;
 
     atlas_joint_reference_print(&manager->reference);
 
@@ -899,7 +881,10 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
         return ATLAS_ERR_FAIL;
     }
 
-    if (!joint_manager_send_system_notify(SYSTEM_NOTIFY_JOINT_READY)) {
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_STARTED,
+                            .payload.joint_started = {}};
+    if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
