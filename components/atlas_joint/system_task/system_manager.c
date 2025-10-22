@@ -265,7 +265,7 @@ static atlas_err_t system_manager_event_joint_ready_handler(
     ATLAS_ASSERT(manager && joint_ready);
     ATLAS_LOG_FUNC(TAG);
 
-    if (manager->is_joint_start_pending) {
+    if (manager->is_joint_start_pending && !manager->is_joint_running) {
         joint_event_t event = {.type = JOINT_EVENT_TYPE_START,
                                .payload.start = {}};
         if (!system_manager_send_joint_event(manager, &event)) {
