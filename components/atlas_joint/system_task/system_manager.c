@@ -89,28 +89,18 @@ static inline bool system_manager_has_system_event(void)
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_SYSTEM)) > 0U;
 }
 
-static inline bool system_manager_send_joint_event(system_manager_t* manager,
-                                                   joint_event_t const* event)
+static inline bool system_manager_send_joint_event(joint_event_t const* event)
 {
-    ATLAS_ASSERT(manager && event);
-
-    if (!manager->is_joint_running && event->type != JOINT_EVENT_TYPE_START) {
-        return false;
-    }
+    ATLAS_ASSERT(event);
 
     return xQueueSend(queue_manager_get(QUEUE_TYPE_JOINT),
                       event,
                       pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static inline bool system_manager_send_packet_event(system_manager_t* manager,
-                                                    packet_event_t const* event)
+static inline bool system_manager_send_packet_event(packet_event_t const* event)
 {
-    ATLAS_ASSERT(manager && event);
-
-    if (!manager->is_packet_running && event->type != PACKET_EVENT_TYPE_START) {
-        return false;
-    }
+    ATLAS_ASSERT(event);
 
     return xQueueSend(queue_manager_get(QUEUE_TYPE_PACKET),
                       event,
@@ -159,7 +149,7 @@ static atlas_err_t system_manager_event_packet_ready_handler(
 
     packet_event_t event = {.type = PACKET_EVENT_TYPE_START,
                             .payload.start = {}};
-    if (!system_manager_send_packet_event(manager, &event)) {
+    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -174,6 +164,19 @@ static atlas_err_t system_manager_event_packet_started_handler(
 {
     ATLAS_ASSERT(manager && packet_started);
     ATLAS_LOG_FUNC(TAG);
+
+    if (manager->is_joint_ready_pending) {
+        packet_event_t event = {
+            .type = PACKET_EVENT_TYPE_JOINT_READY,
+            .payload.joint_ready = {.ready = {},
+                                    .num = manager->config.joint_num,
+                                    .timestamp = manager->current_timestamp}};
+        if (!system_manager_send_packet_event(&event)) {
+            return ATLAS_ERR_FAIL;
+        }
+
+        manager->is_joint_ready_pending = false;
+    }
 
     manager->is_packet_running = true;
 
@@ -206,7 +209,7 @@ static atlas_err_t system_manager_event_joint_start_handler(
     if (manager->is_joint_ready) {
         joint_event_t event = {.type = JOINT_EVENT_TYPE_START,
                                .payload.start = {.start = joint_start->start}};
-        if (!system_manager_send_joint_event(manager, &event)) {
+        if (!system_manager_send_joint_event(&event)) {
             return ATLAS_ERR_FAIL;
         }
     } else {
@@ -223,13 +226,15 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     ATLAS_ASSERT(manager && joint_stop);
     ATLAS_LOG_FUNC(TAG);
 
-    joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP,
-                           .payload.stop = {.stop = joint_stop->stop}};
-    if (!system_manager_send_joint_event(manager, &event)) {
-        return ATLAS_ERR_FAIL;
+    if (!manager->is_joint_running) {
+        return ATLAS_ERR_NOT_RUNNING;
     }
 
-    manager->is_joint_running = false;
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP,
+                           .payload.stop = {.stop = joint_stop->stop}};
+    if (!system_manager_send_joint_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -241,6 +246,10 @@ static atlas_err_t system_manager_event_joint_reference_handler(
     ATLAS_ASSERT(manager && joint_reference);
     ATLAS_LOG_FUNC(TAG);
 
+    if (!manager->is_joint_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
     if (atlas_joint_reference_is_equal(&manager->joint_reference,
                                        &joint_reference->reference)) {
         return ATLAS_ERR_OK;
@@ -249,7 +258,7 @@ static atlas_err_t system_manager_event_joint_reference_handler(
     joint_event_t event = {
         .type = JOINT_EVENT_TYPE_REFERENCE,
         .payload.reference = {.reference = joint_reference->reference}};
-    if (!system_manager_send_joint_event(manager, &event)) {
+    if (!system_manager_send_joint_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -268,7 +277,7 @@ static atlas_err_t system_manager_event_joint_ready_handler(
     if (manager->is_joint_start_pending && !manager->is_joint_running) {
         joint_event_t event = {.type = JOINT_EVENT_TYPE_START,
                                .payload.start = {}};
-        if (!system_manager_send_joint_event(manager, &event)) {
+        if (!system_manager_send_joint_event(&event)) {
             return ATLAS_ERR_FAIL;
         }
 
@@ -280,13 +289,17 @@ static atlas_err_t system_manager_event_joint_ready_handler(
         return ATLAS_ERR_FAIL;
     }
 
-    packet_event_t event = {
-        .type = PACKET_EVENT_TYPE_JOINT_READY,
-        .payload.joint_ready = {.num = manager->config.joint_num,
-                                .timestamp = manager->current_timestamp,
-                                .ready = joint_ready->ready}};
-    if (!system_manager_send_packet_event(manager, &event)) {
-        return ATLAS_ERR_FAIL;
+    if (manager->is_packet_running) {
+        packet_event_t event = {
+            .type = PACKET_EVENT_TYPE_JOINT_READY,
+            .payload.joint_ready = {.num = manager->config.joint_num,
+                                    .timestamp = manager->current_timestamp,
+                                    .ready = joint_ready->ready}};
+        if (!system_manager_send_packet_event(&event)) {
+            return ATLAS_ERR_FAIL;
+        }
+    } else {
+        manager->is_joint_ready_pending = true;
     }
 
     manager->is_joint_ready = true;
@@ -311,7 +324,7 @@ static atlas_err_t system_manager_event_joint_started_handler(
         .payload.joint_started = {.num = manager->config.joint_num,
                                   .timestamp = manager->current_timestamp,
                                   .started = joint_started->started}};
-    if (!system_manager_send_packet_event(manager, &event)) {
+    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -337,7 +350,7 @@ static atlas_err_t system_manager_event_joint_stopped_handler(
         .payload.joint_stopped = {.num = manager->config.joint_num,
                                   .timestamp = manager->current_timestamp,
                                   .stopped = joint_stopped->stopped}};
-    if (!system_manager_send_packet_event(manager, &event)) {
+    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -363,7 +376,7 @@ static atlas_err_t system_manager_event_joint_fault_handler(
         .payload.joint_fault = {.num = manager->config.joint_num,
                                 .timestamp = manager->current_timestamp,
                                 .fault = joint_fault->fault}};
-    if (!system_manager_send_packet_event(manager, &event)) {
+    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -392,7 +405,7 @@ static atlas_err_t system_manager_event_joint_measure_handler(
         .payload.joint_measure = {.num = manager->config.joint_num,
                                   .timestamp = manager->current_timestamp,
                                   .measure = joint_measure->measure}};
-    if (!system_manager_send_packet_event(manager, &event)) {
+    if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
 

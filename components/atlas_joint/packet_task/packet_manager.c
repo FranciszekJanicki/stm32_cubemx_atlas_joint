@@ -281,8 +281,8 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
         system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
                                 .origin = SYSTEM_EVENT_ORIGIN_PACKET};
 
-        event.payload.joint_reference.position = 10.0F;
-        event.payload.joint_reference.delta_time = 0.001F;
+        event.payload.joint_reference.reference.position = 10.0F;
+        event.payload.joint_reference.reference.delta_time = 0.001F;
         packet_manager_send_system_event(&event);
     }
 
@@ -365,6 +365,13 @@ static atlas_err_t packet_manager_event_start_handler(
         return ATLAS_ERR_ALREADY_RUNNING;
     }
 
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
+                            .type = SYSTEM_EVENT_TYPE_PACKET_STARTED,
+                            .payload.packet_started = {}};
+    if (!packet_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
     manager->is_running = true;
 
 #ifdef JOINT_PACKET_TEST
@@ -389,6 +396,13 @@ static atlas_err_t packet_manager_event_stop_handler(
 
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
+                            .type = SYSTEM_EVENT_TYPE_PACKET_STOPPED,
+                            .payload.packet_stopped = {}};
+    if (!packet_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
     }
 
     manager->is_running = false;

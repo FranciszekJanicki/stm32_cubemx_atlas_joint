@@ -882,7 +882,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
     }
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
-                            .type = SYSTEM_EVENT_TYPE_JOINT_STARTED,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_READY,
                             .payload.joint_started = {}};
     if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
