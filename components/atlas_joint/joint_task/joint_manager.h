@@ -32,9 +32,12 @@ typedef struct {
     uint16_t as5600_i2c_address;
 } joint_config_t;
 
+typedef atlas_joint_parameters_t joint_parameters_t;
+
 typedef struct {
     bool is_running;
     bool has_fault;
+    bool has_reset;
 
     atlas_joint_measure_t measure;
     atlas_joint_reference_t reference;
@@ -47,24 +50,8 @@ typedef struct {
     motor_driver_t driver;
 
     joint_config_t config;
+    joint_parameters_t parameters;
 } joint_manager_t;
-
-typedef struct {
-    float32_t prop_gain;
-    float32_t int_gain;
-    float32_t dot_gain;
-    float32_t sat_gain;
-    float32_t dead_error;
-    float32_t min_speed;
-    float32_t max_speed;
-    float32_t min_position;
-    float32_t max_position;
-    float32_t min_acceleration;
-    float32_t max_acceleration;
-    float32_t step_change;
-    float32_t current_limit;
-    bool magnet_polarity;
-} joint_parameters_t;
 
 atlas_err_t joint_manager_initialize(joint_manager_t* manager,
                                      joint_config_t const* config,

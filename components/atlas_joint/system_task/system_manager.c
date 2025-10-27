@@ -239,6 +239,26 @@ static atlas_err_t system_manager_event_joint_stop_handler(
     return ATLAS_ERR_OK;
 }
 
+static atlas_err_t system_manager_event_joint_reset_handler(
+    system_manager_t* manager,
+    system_event_payload_joint_reset_t const* joint_reset)
+{
+    ATLAS_ASSERT(manager && joint_reset);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_joint_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP,
+                           .payload.reset = {.reset = joint_reset->reset}};
+    if (!system_manager_send_joint_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
 static atlas_err_t system_manager_event_joint_reference_handler(
     system_manager_t* manager,
     system_event_payload_joint_reference_t const* joint_reference)
@@ -263,6 +283,27 @@ static atlas_err_t system_manager_event_joint_reference_handler(
     }
 
     manager->joint_reference = joint_reference->reference;
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t system_manager_event_joint_parameters_handler(
+    system_manager_t* manager,
+    system_event_payload_joint_parameters_t const* joint_parameters)
+{
+    ATLAS_ASSERT(manager && joint_parameters);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_joint_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    joint_event_t event = {
+        .type = JOINT_EVENT_TYPE_PARAMETERS,
+        .payload.parameters = {.parameters = joint_parameters->parameters}};
+    if (!system_manager_send_joint_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -445,10 +486,18 @@ static atlas_err_t system_manager_event_handler(system_manager_t* manager,
                 manager,
                 &event->payload.joint_stop);
         }
+        case SYSTEM_EVENT_TYPE_JOINT_RESET: {
+            return system_manager_event_joint_reset_handler(
+                manager,
+                &event->payload.joint_reset);
+        }
         case SYSTEM_EVENT_TYPE_JOINT_REFERENCE: {
             return system_manager_event_joint_reference_handler(
                 manager,
                 &event->payload.joint_reference);
+        }
+        case SYSTEM_EVENT_TYPE_JOINT_PARAMETERS: {
+            return system_manager_event_joint_parameters_handler(manager, &event->payload.joint_parameters);
         }
         case SYSTEM_EVENT_TYPE_JOINT_READY: {
             return system_manager_event_joint_ready_handler(

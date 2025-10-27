@@ -21,6 +21,7 @@ typedef enum {
     SYSTEM_EVENT_TYPE_JOINT_STOP,
     SYSTEM_EVENT_TYPE_JOINT_RESET,
     SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
+    SYSTEM_EVENT_TYPE_JOINT_PARAMETERS,
 } system_event_type_t;
 
 typedef struct {
@@ -41,8 +42,16 @@ typedef struct {
 } system_event_payload_joint_stop_t;
 
 typedef struct {
+    atlas_joint_reset_t reset;
+} system_event_payload_joint_reset_t;
+
+typedef struct {
     atlas_joint_reference_t reference;
 } system_event_payload_joint_reference_t;
+
+typedef struct {
+    atlas_joint_parameters_t parameters;
+} system_event_payload_joint_parameters_t;
 
 typedef struct {
     atlas_joint_ready_t ready;
@@ -70,7 +79,9 @@ typedef union {
     system_event_payload_packet_stopped_t packet_stopped;
     system_event_payload_joint_start_t joint_start;
     system_event_payload_joint_stop_t joint_stop;
+    system_event_payload_joint_reset_t joint_reset;
     system_event_payload_joint_reference_t joint_reference;
+    system_event_payload_joint_parameters_t joint_parameters;
     system_event_payload_joint_ready_t joint_ready;
     system_event_payload_joint_started_t joint_started;
     system_event_payload_joint_stopped_t joint_stopped;
@@ -87,7 +98,9 @@ typedef struct {
 typedef enum {
     JOINT_EVENT_TYPE_START,
     JOINT_EVENT_TYPE_STOP,
+    JOINT_EVENT_TYPE_RESET,
     JOINT_EVENT_TYPE_REFERENCE,
+    JOINT_EVENT_TYPE_PARAMETERS,
 } joint_event_type_t;
 
 typedef struct {
@@ -99,13 +112,23 @@ typedef struct {
 } joint_event_payload_stop_t;
 
 typedef struct {
+    atlas_joint_reset_t reset;
+} joint_event_payload_reset_t;
+
+typedef struct {
     atlas_joint_reference_t reference;
 } joint_event_payload_reference_t;
+
+typedef struct {
+    atlas_joint_parameters_t parameters;
+} joint_event_payload_parameters_t;
 
 typedef union {
     joint_event_payload_start_t start;
     joint_event_payload_stop_t stop;
+    joint_event_payload_reset_t reset;
     joint_event_payload_reference_t reference;
+    joint_event_payload_parameters_t parameters;
 } joint_event_payload_t;
 
 typedef struct {

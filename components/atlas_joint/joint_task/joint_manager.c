@@ -11,6 +11,7 @@
 #include "stm32f4xx_hal.h"
 #include "task.h"
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -360,6 +361,8 @@ static inline ina226_err_t ina226_bus_read_data(void* user,
     return INA226_ERR_OK;
 }
 
+float32_t ina226_current_range_to_scale(float32_t);
+
 static inline ina226_err_t ina226_initialize_chip(ina226_t* ina226,
                                                   float32_t min_current,
                                                   float32_t max_current)
@@ -539,6 +542,216 @@ static inline bool joint_manager_receive_joint_notify(joint_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
+static inline bool joint_manager_initialize_chips(joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    if (as5600_initialize_chip(&manager->as5600,
+                               manager->parameters.min_position,
+                               manager->parameters.max_position,
+                               manager->parameters.magnet_polarity) !=
+        AS5600_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed as5600_initialize_chip");
+
+        return false;
+    }
+
+    // if (ina226_initialize_chip(&manager->ina226,
+    //                            0.0F,
+    //                            manager->parameters.current_limit) !=
+    //     INA226_ERR_OK) {
+    //     ATLAS_LOG(TAG, "Failed ina226_initialize_chip");
+
+    //     return false;
+    // }
+
+    return true;
+}
+
+static inline bool joint_manager_deinitialize_chips(joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+}
+
+static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    if (as5600_initialize(
+            &manager->as5600,
+            &(as5600_config_t){.max_angle = manager->parameters.max_position,
+                               .min_angle = manager->parameters.min_position},
+            &(as5600_interface_t){.gpio_user = &manager->config,
+                                  .gpio_initialize = as5600_gpio_initialize,
+                                  .gpio_deinitialize = as5600_gpio_deinitialize,
+                                  .gpio_write_pin = as5600_gpio_write_pin,
+                                  .adc_user = &manager->config,
+                                  .adc_initialize = as5600_adc_initialize,
+                                  .adc_deinitialize = as5600_adc_deinitialize,
+                                  .bus_user = &manager->config,
+                                  .bus_initialize = as5600_bus_initialize,
+                                  .bus_deinitialize = as5600_bus_deinitialize,
+                                  .bus_read_data = as5600_bus_read_data,
+                                  .bus_write_data = as5600_bus_write_data}) !=
+        AS5600_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed as5600_initialize");
+
+        return false;
+    }
+
+    // if (ina226_initialize(
+    //         &manager->ina226,
+    //         &(ina226_config_t){.current_scale =
+    //         ina226_current_range_to_scale(
+    //                                manager->parameters.current_limit)},
+    //         &(ina226_interface_t){.bus_user = &manager->config,
+    //                               .bus_initialize = ina226_bus_initialize,
+    //                               .bus_deinitialize =
+    //                               ina226_bus_deinitialize, .bus_read_data =
+    //                               ina226_bus_read_data, .bus_write_data =
+    //                               ina226_bus_write_data}) !=
+    //     INA226_ERR_OK) {
+    //     ATLAS_LOG(TAG, "Failed ina226_initialize");
+
+    //     return false;
+    // }
+
+    if (drv8825_initialize(
+            &manager->drv8825,
+            &(drv8825_config_t){},
+            &(drv8825_interface_t){
+                .gpio_user = &manager->config,
+                .gpio_initialize = drv8825_gpio_initialize,
+                .gpio_deinitialize = drv8825_gpio_deinitialize,
+                .gpio_write_pin = drv8825_gpio_write_pin,
+                .pwm_user = &manager->config,
+                .pwm_initialize = drv8825_pwm_initialize,
+                .pwm_deinitialize = drv8825_pwm_deinitialize,
+                .pwm_start = drv8825_pwm_start,
+                .pwm_stop = drv8825_pwm_stop,
+                .pwm_set_frequency = drv8825_pwm_set_frequency}) !=
+        DRV8825_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed drv8825_initialize");
+
+        return false;
+    }
+
+    if (step_motor_initialize(
+            &manager->motor,
+            &(step_motor_config_t){
+                .min_position = manager->parameters.min_position,
+                .max_position = manager->parameters.max_position,
+                .min_speed = manager->parameters.min_speed,
+                .max_speed = manager->parameters.max_speed,
+                .step_change = manager->parameters.step_change},
+            &(step_motor_interface_t){
+                .device_user = manager,
+                .device_initialize = step_motor_device_initialize,
+                .device_deinitialize = step_motor_device_deinitialize,
+                .device_set_frequency = step_motor_device_set_frequency,
+                .device_set_direction = step_motor_device_set_direction},
+            0.0F) != STEP_MOTOR_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed step_motor_initialize");
+
+        return false;
+    }
+
+    if (pid_regulator_initialize(
+            &manager->regulator,
+            &(pid_regulator_config_t){
+                .prop_gain = manager->parameters.prop_gain,
+                .int_gain = manager->parameters.int_gain,
+                .dot_gain = manager->parameters.dot_gain,
+                .sat_gain = manager->parameters.sat_gain,
+                .min_control = manager->parameters.min_speed,
+                .max_control = manager->parameters.max_speed,
+                .dead_error = manager->parameters.dead_error}) !=
+        PID_REGULATOR_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed pid_regulator_initialize");
+
+        return false;
+    }
+
+    if (motor_driver_initialize(
+            &manager->driver,
+            &(motor_driver_config_t){
+                .min_position = manager->parameters.min_position,
+                .max_position = manager->parameters.max_position,
+                .min_speed = manager->parameters.min_speed,
+                .max_speed = manager->parameters.max_speed,
+                .min_acceleration = manager->parameters.min_acceleration,
+                .max_acceleration = manager->parameters.max_acceleration,
+                .max_current = manager->parameters.current_limit},
+            &(motor_driver_interface_t){
+                .motor_user = manager,
+                .motor_initialize = motor_driver_motor_initialize,
+                .motor_deinitialize = motor_driver_motor_deinitialize,
+                .motor_set_speed = motor_driver_motor_set_speed,
+                .encoder_user = manager,
+                .encoder_initialize = motor_driver_encoder_initialize,
+                .encoder_deinitialize = motor_driver_encoder_deinitialize,
+                .encoder_get_position = motor_driver_encoder_get_position,
+                .regulator_user = manager,
+                .regulator_initialize = motor_driver_regulator_initialize,
+                .regulator_deinitialize = motor_driver_regulator_deinitialize,
+                .regulator_get_control = motor_driver_regulator_get_control,
+                .fault_user = manager,
+                .fault_initialize = motor_driver_fault_initialize,
+                .fault_deinitialize = motor_driver_fault_deinitialize,
+                .fault_get_current = motor_driver_fault_get_current}) !=
+        MOTOR_DRIVER_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed motor_driver_initialize");
+
+        return false;
+    }
+
+    return true;
+}
+
+static inline bool joint_manager_deinitialize_drivers(joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    if (as5600_deinitialize(&manager->as5600) != AS5600_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed as5600_deinitialize");
+
+        return false;
+    }
+
+    // if (ina226_deinitialize(&manager->ina226) != INA226_ERR_OK) {
+    //     ATLAS_LOG(TAG, "Failed ina226_deinitialize");
+
+    //     return false;
+    // }
+
+    if (drv8825_deinitialize(&manager->drv8825) != DRV8825_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed drv8825_deinitialize");
+
+        return false;
+    }
+
+    if (step_motor_deinitialize(&manager->motor) != STEP_MOTOR_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed step_motor_deinitialize");
+
+        return false;
+    }
+
+    if (pid_regulator_deinitialize(&manager->regulator) !=
+        PID_REGULATOR_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed pid_regulator_deinitialize");
+
+        return false;
+    }
+
+    if (motor_driver_deinitialize(&manager->driver) != MOTOR_DRIVER_ERR_OK) {
+        ATLAS_LOG(TAG, "Failed motor_driver_deinitialize");
+
+        return false;
+    }
+
+    return true;
+}
+
 static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     joint_manager_t* manager)
 {
@@ -598,8 +811,10 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
     atlas_joint_measure_print(&manager->measure);
 
-    if (manager->has_fault) {
-        manager->has_fault = false;
+    if (manager->has_reset &&
+        fabsf(manager->parameters.home_position - manager->measure.position) <
+            manager->parameters.dead_error) {
+        manager->has_reset = false;
     }
 
     return ATLAS_ERR_OK;
@@ -637,9 +852,9 @@ static atlas_err_t joint_manager_notify_handler(joint_manager_t* manager,
 
 static atlas_err_t joint_manager_event_start_handler(
     joint_manager_t* manager,
-    joint_event_payload_start_t const* payload)
+    joint_event_payload_start_t const* start)
 {
-    ATLAS_ASSERT(manager && payload);
+    ATLAS_ASSERT(manager && start);
     ATLAS_LOG_FUNC(TAG);
 
     if (manager->is_running) {
@@ -663,9 +878,9 @@ static atlas_err_t joint_manager_event_start_handler(
 
 static atlas_err_t joint_manager_event_stop_handler(
     joint_manager_t* manager,
-    joint_event_payload_stop_t const* payload)
+    joint_event_payload_stop_t const* stop)
 {
-    ATLAS_ASSERT(manager && payload);
+    ATLAS_ASSERT(manager && stop);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
@@ -687,6 +902,23 @@ static atlas_err_t joint_manager_event_stop_handler(
     return ATLAS_ERR_OK;
 }
 
+static atlas_err_t joint_manager_event_reset_handler(
+    joint_manager_t* manager,
+    joint_event_payload_reset_t const* reset)
+{
+    ATLAS_ASSERT(manager && reset);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    manager->has_fault = true;
+    manager->reference.position = manager->parameters.home_position;
+
+    return ATLAS_ERR_OK;
+}
+
 static atlas_err_t joint_manager_event_reference_handler(
     joint_manager_t* manager,
     joint_event_payload_reference_t const* reference)
@@ -698,9 +930,37 @@ static atlas_err_t joint_manager_event_reference_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
+    if (manager->has_reset) {
+        return ATLAS_ERR_IMPROPER_STATE;
+    }
+
     manager->reference = reference->reference;
 
     atlas_joint_reference_print(&manager->reference);
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t joint_manager_event_parameters_handler(
+    joint_manager_t* manager,
+    joint_event_payload_parameters_t const* parameters)
+{
+    ATLAS_ASSERT(manager && parameters);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (manager->is_running) {
+        return ATLAS_ERR_IMPROPER_STATE;
+    }
+
+    if (!joint_manager_deinitialize_drivers(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    manager->parameters = parameters->parameters;
+
+    if (!joint_manager_initialize_drivers(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -719,10 +979,19 @@ static atlas_err_t joint_manager_event_handler(joint_manager_t* manager,
             return joint_manager_event_stop_handler(manager,
                                                     &event->payload.stop);
         }
+        case JOINT_EVENT_TYPE_RESET: {
+            return joint_manager_event_reset_handler(manager,
+                                                     &event->payload.reset);
+        }
         case JOINT_EVENT_TYPE_REFERENCE: {
             return joint_manager_event_reference_handler(
                 manager,
                 &event->payload.reference);
+        }
+        case JOINT_EVENT_TYPE_PARAMETERS: {
+            return joint_manager_event_parameters_handler(
+                manager,
+                &event->payload.parameters);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_EVENT;
@@ -755,129 +1024,23 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 {
     ATLAS_ASSERT(manager && config && parameters);
 
-    manager->config = *config;
     manager->is_running = false;
     manager->has_fault = false;
+
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
+
     manager->reference.position = 0.0F;
     manager->reference.delta_time = 0.0F;
 
-    if (as5600_initialize(
-            &manager->as5600,
-            &(as5600_config_t){.max_angle = parameters->max_position,
-                               .min_angle = parameters->min_position},
-            &(as5600_interface_t){.gpio_user = &manager->config,
-                                  .gpio_initialize = as5600_gpio_initialize,
-                                  .gpio_deinitialize = as5600_gpio_deinitialize,
-                                  .gpio_write_pin = as5600_gpio_write_pin,
-                                  .adc_user = &manager->config,
-                                  .adc_initialize = as5600_adc_initialize,
-                                  .adc_deinitialize = as5600_adc_deinitialize,
-                                  .bus_user = &manager->config,
-                                  .bus_initialize = as5600_bus_initialize,
-                                  .bus_deinitialize = as5600_bus_deinitialize,
-                                  .bus_read_data = as5600_bus_read_data,
-                                  .bus_write_data = as5600_bus_write_data}) !=
-        AS5600_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed as5600_initialize");
+    manager->config = *config;
+    manager->parameters = *parameters;
 
+    if (!joint_manager_initialize_drivers(manager)) {
         return ATLAS_ERR_FAIL;
     }
 
-    if (as5600_initialize_chip(&manager->as5600,
-                               parameters->min_position,
-                               parameters->max_position,
-                               parameters->magnet_polarity) != AS5600_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed as5600_initialize_chip");
-
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (drv8825_initialize(
-            &manager->drv8825,
-            &(drv8825_config_t){},
-            &(drv8825_interface_t){
-                .gpio_user = &manager->config,
-                .gpio_initialize = drv8825_gpio_initialize,
-                .gpio_deinitialize = drv8825_gpio_deinitialize,
-                .gpio_write_pin = drv8825_gpio_write_pin,
-                .pwm_user = &manager->config,
-                .pwm_initialize = drv8825_pwm_initialize,
-                .pwm_deinitialize = drv8825_pwm_deinitialize,
-                .pwm_start = drv8825_pwm_start,
-                .pwm_stop = drv8825_pwm_stop,
-                .pwm_set_frequency = drv8825_pwm_set_frequency}) !=
-        DRV8825_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed drv8825_initialize");
-
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (step_motor_initialize(
-            &manager->motor,
-            &(step_motor_config_t){.min_position = parameters->min_position,
-                                   .max_position = parameters->max_position,
-                                   .min_speed = parameters->min_speed,
-                                   .max_speed = parameters->max_speed,
-                                   .step_change = parameters->step_change},
-            &(step_motor_interface_t){
-                .device_user = manager,
-                .device_initialize = step_motor_device_initialize,
-                .device_deinitialize = step_motor_device_deinitialize,
-                .device_set_frequency = step_motor_device_set_frequency,
-                .device_set_direction = step_motor_device_set_direction},
-            0.0F) != STEP_MOTOR_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed step_motor_initialize");
-
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (pid_regulator_initialize(
-            &manager->regulator,
-            &(pid_regulator_config_t){.prop_gain = parameters->prop_gain,
-                                      .int_gain = parameters->int_gain,
-                                      .dot_gain = parameters->dot_gain,
-                                      .sat_gain = parameters->sat_gain,
-                                      .min_control = parameters->min_speed,
-                                      .max_control = parameters->max_speed,
-                                      .dead_error = parameters->dead_error}) !=
-        PID_REGULATOR_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed pid_regulator_initialize");
-
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (motor_driver_initialize(
-            &manager->driver,
-            &(motor_driver_config_t){
-                .min_position = parameters->min_position,
-                .max_position = parameters->max_position,
-                .min_speed = parameters->min_speed,
-                .max_speed = parameters->max_speed,
-                .min_acceleration = parameters->min_acceleration,
-                .max_acceleration = parameters->max_acceleration,
-                .max_current = parameters->current_limit},
-            &(motor_driver_interface_t){
-                .motor_user = manager,
-                .motor_initialize = motor_driver_motor_initialize,
-                .motor_deinitialize = motor_driver_motor_deinitialize,
-                .motor_set_speed = motor_driver_motor_set_speed,
-                .encoder_user = manager,
-                .encoder_initialize = motor_driver_encoder_initialize,
-                .encoder_deinitialize = motor_driver_encoder_deinitialize,
-                .encoder_get_position = motor_driver_encoder_get_position,
-                .regulator_user = manager,
-                .regulator_initialize = motor_driver_regulator_initialize,
-                .regulator_deinitialize = motor_driver_regulator_deinitialize,
-                .regulator_get_control = motor_driver_regulator_get_control,
-                .fault_user = manager,
-                .fault_initialize = motor_driver_fault_initialize,
-                .fault_deinitialize = motor_driver_fault_deinitialize,
-                .fault_get_current = motor_driver_fault_get_current}) !=
-        MOTOR_DRIVER_ERR_OK) {
-        ATLAS_LOG(TAG, "Failed motor_driver_initialize");
-
+    if (!joint_manager_initialize_chips(manager)) {
         return ATLAS_ERR_FAIL;
     }
 

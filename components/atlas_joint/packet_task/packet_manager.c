@@ -205,6 +205,27 @@ static atlas_err_t packet_manager_packet_joint_stop_handler(
     return ATLAS_ERR_OK;
 }
 
+static atlas_err_t packet_manager_packet_joint_reset_handler(
+    packet_manager_t* manager,
+    atlas_joint_packet_payload_joint_reset_t const* joint_reset)
+{
+    ATLAS_ASSERT(manager && joint_reset);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_READY,
+                            .payload.joint_reset = *joint_reset};
+    if (!packet_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
 static atlas_err_t packet_manager_packet_joint_reference_handler(
     packet_manager_t* manager,
     atlas_joint_packet_payload_joint_reference_t const* joint_reference)
@@ -219,6 +240,27 @@ static atlas_err_t packet_manager_packet_joint_reference_handler(
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
                             .type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
                             .payload.joint_reference = *joint_reference};
+    if (!packet_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t packet_manager_packet_joint_parameters_handler(
+    packet_manager_t* manager,
+    atlas_joint_packet_payload_joint_parameters_t const* joint_parameters)
+{
+    ATLAS_ASSERT(manager && joint_parameters);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_PACKET,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_PARAMETERS,
+                            .payload.joint_parameters = *joint_parameters};
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
@@ -244,10 +286,20 @@ static atlas_err_t packet_manager_joint_packet_handler(
                 manager,
                 &packet->payload.joint_stop);
         }
+        case ATLAS_JOINT_PACKET_TYPE_JOINT_RESET: {
+            return packet_manager_packet_joint_reset_handler(
+                manager,
+                &packet->payload.joint_reset);
+        }
         case ATLAS_JOINT_PACKET_TYPE_JOINT_REFERENCE: {
             return packet_manager_packet_joint_reference_handler(
                 manager,
                 &packet->payload.joint_reference);
+        }
+        case ATLAS_JOINT_PACKET_TYPE_JOINT_PARAMETERS: {
+            return packet_manager_packet_joint_parameters_handler(
+                manager,
+                &packet->payload.joint_parameters);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_PACKET;
