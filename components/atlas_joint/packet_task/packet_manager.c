@@ -121,7 +121,9 @@ static inline void packet_manager_prepare_robot_packet(
     memset(manager->transmit_buffer, 0, sizeof(manager->transmit_buffer));
 
     atlas_robot_packet_print(packet);
-    atlas_robot_packet_encode(packet, &manager->transmit_buffer);
+    atlas_robot_packet_encode(
+        packet,
+        (uint8_t (*)[ATLAS_ROBOT_PACKET_SIZE])manager->transmit_buffer);
 
     packet_manager_assert_data_ready(manager);
 
@@ -148,7 +150,9 @@ static inline void packet_manager_parse_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    atlas_joint_packet_decode(&manager->receive_buffer, packet);
+    atlas_joint_packet_decode(
+        (uint8_t (*)[ATLAS_JOINT_PACKET_SIZE])manager->receive_buffer,
+        packet);
     atlas_joint_packet_print(packet);
 }
 

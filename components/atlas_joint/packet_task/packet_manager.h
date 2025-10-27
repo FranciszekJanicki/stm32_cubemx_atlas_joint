@@ -19,6 +19,13 @@ typedef struct {
     SPI_HandleTypeDef* packet_spi_bus;
 } packet_config_t;
 
+#define TRANSFER_BUFFER_SIZE                           \
+    (ATLAS_JOINT_PACKET_SIZE > ATLAS_ROBOT_PACKET_SIZE \
+         ? ATLAS_JOINT_PACKET_SIZE                     \
+         : ATLAS_ROBOT_PACKET_SIZE)
+#define RECEIVE_BUFFER_SIZE (TRANSFER_BUFFER_SIZE)
+#define TRANSMIT_BUFFER_SIZE (TRANSFER_BUFFER_SIZE)
+
 typedef struct {
     bool is_running;
     bool is_transfer_pending;
@@ -26,8 +33,8 @@ typedef struct {
 
     packet_config_t config;
 
-    uint8_t receive_buffer[ATLAS_JOINT_PACKET_SIZE];
-    uint8_t transmit_buffer[ATLAS_ROBOT_PACKET_SIZE];
+    uint8_t receive_buffer[RECEIVE_BUFFER_SIZE];
+    uint8_t transmit_buffer[TRANSMIT_BUFFER_SIZE];
 } packet_manager_t;
 
 atlas_err_t packet_manager_initialize(packet_manager_t* manager,

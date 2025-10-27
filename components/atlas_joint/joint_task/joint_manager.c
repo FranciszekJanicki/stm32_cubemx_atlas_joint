@@ -1026,6 +1026,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     manager->is_running = false;
     manager->has_fault = false;
+    manager->has_reset = false;
 
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
