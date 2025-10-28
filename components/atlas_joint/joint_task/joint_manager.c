@@ -913,7 +913,10 @@ static atlas_err_t joint_manager_event_reset_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    manager->has_fault = true;
+    if (manager->measure.position != manager->parameters.home_position) {
+        manager->has_reset = true;
+    }
+
     manager->reference.position = manager->parameters.home_position;
 
     return ATLAS_ERR_OK;

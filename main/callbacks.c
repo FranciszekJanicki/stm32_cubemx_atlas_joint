@@ -79,11 +79,11 @@ __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(
 
 static inline void joint_slave_select_exti_callback(void)
 {
-    // if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
-    //     GPIO_PIN_RESET) {
-    //     HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
-    //     HAL_TIM_Base_Start_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
-    // }
+    if (HAL_GPIO_ReadPin(JOINT_SLAVE_SELECT_GPIO, JOINT_SLAVE_SELECT_PIN) ==
+        GPIO_PIN_RESET) {
+        HAL_TIM_Base_Stop_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
+        HAL_TIM_Base_Start_IT(JOINT_SLAVE_SELECT_DEBOUNCE_TIMER);
+    }
 }
 
 static inline void joint_delta_elapsed_exti_callback(void)
@@ -98,7 +98,7 @@ static inline void joint_delta_elapsed_exti_callback(void)
 __attribute__((used)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == JOINT_SLAVE_SELECT_PIN) {
-        joint_slave_select_exti_callback();
+        // joint_slave_select_exti_callback();
     } else if (GPIO_Pin == JOINT_DELTA_ELAPSED_PIN) {
         joint_delta_elapsed_exti_callback();
     }

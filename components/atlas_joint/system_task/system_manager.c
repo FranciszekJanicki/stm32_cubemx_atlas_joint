@@ -178,6 +178,19 @@ static atlas_err_t system_manager_event_packet_started_handler(
         manager->is_joint_ready_pending = false;
     }
 
+    if (manager->is_joint_fault_pending) {
+        packet_event_t event = {
+            .type = PACKET_EVENT_TYPE_JOINT_FAULT,
+            .payload.joint_fault = {.fault = {},
+                                    .num = manager->config.joint_num,
+                                    .timestamp = manager->current_timestamp}};
+        if (!system_manager_send_packet_event(&event)) {
+            return ATLAS_ERR_FAIL;
+        }
+
+        manager->is_joint_fault_pending = false;
+    }
+
     manager->is_packet_running = true;
 
     return ATLAS_ERR_OK;
@@ -250,7 +263,7 @@ static atlas_err_t system_manager_event_joint_reset_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    joint_event_t event = {.type = JOINT_EVENT_TYPE_STOP,
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_RESET,
                            .payload.reset = {.reset = joint_reset->reset}};
     if (!system_manager_send_joint_event(&event)) {
         return ATLAS_ERR_FAIL;
@@ -315,14 +328,12 @@ static atlas_err_t system_manager_event_joint_ready_handler(
     ATLAS_ASSERT(manager && joint_ready);
     ATLAS_LOG_FUNC(TAG);
 
-    if (manager->is_joint_start_pending && !manager->is_joint_running) {
+    if (manager->is_joint_start_pending) {
         joint_event_t event = {.type = JOINT_EVENT_TYPE_START,
                                .payload.start = {}};
         if (!system_manager_send_joint_event(&event)) {
             return ATLAS_ERR_FAIL;
         }
-
-        manager->is_joint_start_pending = false;
     }
 
     if (!system_manager_get_rtc_timestamp(manager,
@@ -367,6 +378,10 @@ static atlas_err_t system_manager_event_joint_started_handler(
                                   .started = joint_started->started}};
     if (!system_manager_send_packet_event(&event)) {
         return ATLAS_ERR_FAIL;
+    }
+
+    if (manager->is_joint_start_pending) {
+        manager->is_joint_start_pending = false;
     }
 
     manager->is_joint_running = true;
@@ -497,7 +512,9 @@ static atlas_err_t system_manager_event_handler(system_manager_t* manager,
                 &event->payload.joint_reference);
         }
         case SYSTEM_EVENT_TYPE_JOINT_PARAMETERS: {
-            return system_manager_event_joint_parameters_handler(manager, &event->payload.joint_parameters);
+            return system_manager_event_joint_parameters_handler(
+                manager,
+                &event->payload.joint_parameters);
         }
         case SYSTEM_EVENT_TYPE_JOINT_READY: {
             return system_manager_event_joint_ready_handler(

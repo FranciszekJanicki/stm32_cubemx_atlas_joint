@@ -20,8 +20,11 @@ typedef struct {
 typedef struct {
     bool is_packet_ready;
     bool is_packet_running;
+
     bool is_joint_ready;
     bool is_joint_running;
+
+    bool is_joint_fault_pending;
     bool is_joint_start_pending;
     bool is_joint_ready_pending;
 
