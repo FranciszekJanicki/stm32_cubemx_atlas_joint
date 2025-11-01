@@ -3,7 +3,6 @@
 #include "manager.h"
 #include "semphr.h"
 #include "stream_buffer.h"
-#include "usart.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include <errno.h>
@@ -56,11 +55,7 @@ int _write(int file, char* ptr, int len)
     SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
 
     if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(len))) {
-#ifdef USE_UART
-        HAL_UART_Transmit(LOG_UART_BUS, (uint8_t*)ptr, len, len);
-#else
         CDC_Transmit_FS((uint8_t*)ptr, len);
-#endif
         xSemaphoreGive(log_mutex);
     }
 

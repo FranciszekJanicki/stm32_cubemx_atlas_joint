@@ -9,23 +9,22 @@
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
-#include "usart.h"
 #include "usb_device.h"
 #include "wwdg.h"
 
 static atlas_joint_config_t config = {
-    .log_ctx = {.log_bus = LOG_UART_BUS},
+    .log_ctx = {},
     .system_ctx = {.config = {.joint_num = JOINT_NUM,
                               .timestamp_rtc = TIMESTAMP_RTC,
-                              .delta_timer_gpio = JOINT_DELTA_ELAPSED_GPIO,
-                              .delta_timer_pin = JOINT_DELTA_ELAPSED_PIN}},
-    .packet_ctx = {.config = {.data_ready_gpio = JOINT_DATA_READY_GPIO,
-                              .data_ready_pin = JOINT_DATA_READY_PIN,
+                              .delta_timer_gpio = JOINT_DELTA_GPIO,
+                              .delta_timer_pin = JOINT_DELTA_PIN}},
+    .packet_ctx = {.config = {.data_ready_gpio = JOINT_DRDY_GPIO,
+                              .data_ready_pin = JOINT_DRDY_PIN,
                               .slave_select_gpio = JOINT_SLAVE_SELECT_GPIO,
                               .slave_select_pin = JOINT_SLAVE_SELECT_PIN,
                               .packet_spi_bus = PACKET_SPI_BUS}},
-    .joint_ctx = {.config = {.drv8825_pwm_timer = DRV8825_PWM_TIMER,
-                             .drv8825_pwm_channel = DRV8825_PWM_CHANNEL,
+    .joint_ctx = {.config = {.drv8825_pwm_timer = DRV8825_STEP_TIMER,
+                             .drv8825_pwm_channel = DRV8825_STEP_CHANNEL,
                              .drv8825_dir_gpio = DRV8825_DIR_GPIO,
                              .drv8825_dir_pin = DRV8825_DIR_PIN,
                              .ina226_i2c_bus = INA226_I2C_BUS,
@@ -57,14 +56,9 @@ int main(void)
     SystemClock_Config();
 
     MX_GPIO_Init();
-#ifdef USE_UART
-    MX_USART2_UART_Init();
-#else
     MX_USB_DEVICE_Init();
-#endif
     MX_TIM1_Init();
     MX_TIM2_Init();
-    MX_TIM3_Init();
     MX_I2C1_Init();
     MX_SPI1_Init();
     MX_RTC_Init();
@@ -75,7 +69,7 @@ int main(void)
     MX_WWDG_Init();
 #endif
 
-    HAL_Delay(1500U);
+    HAL_Delay(500U);
 
     atlas_joint_initialize(&config);
 }

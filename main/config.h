@@ -8,7 +8,6 @@
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
-#include "usart.h"
 #include "wwdg.h"
 
 extern TIM_HandleTypeDef htim4;
@@ -209,9 +208,6 @@ extern TIM_HandleTypeDef htim4;
 #error "Unsupported JOINT_NUM selected!"
 #endif
 
-#define LOG_UART_BUS (&huart2)
-#define LOG_USB_BUS (NULL)
-
 #define TIMESTAMP_RTC (&hrtc)
 
 #define SYSTICK_TIMER (&htim4)
@@ -223,29 +219,31 @@ extern TIM_HandleTypeDef htim4;
 #define JOINT_SLAVE_SELECT_GPIO (GPIOB)
 #define JOINT_SLAVE_SELECT_PIN (1U << 14U)
 
-#define JOINT_DELTA_ELAPSED_GPIO (GPIOB)
-#define JOINT_DELTA_ELAPSED_PIN (1U << 13U)
+#define JOINT_DELTA_GPIO (GPIOB)
+#define JOINT_DELTA_PIN (1U << 13U)
 
-#define JOINT_DATA_READY_GPIO (GPIOB)
-#define JOINT_DATA_READY_PIN (1U << 12U)
+#define JOINT_DRDY_GPIO (GPIOB)
+#define JOINT_DRDY_PIN (1U << 12U)
 
-#define JOINT_DELTA_ELAPSED_DEBOUNCE_TIMER (&htim1)
-#define JOINT_SLAVE_SELECT_DEBOUNCE_TIMER (&htim3)
+#define JOINT_DELTA_DEBOUNCE_TIMER (&htim1)
 
 #define AS5600_I2C_ADDRESS (AS5600_SLAVE_ADDRESS)
 #define AS5600_I2C_BUS (&hi2c1)
 
-#define AS5600_DIR_GPIO (GPIOA)
+#define AS5600_DIR_GPIO (GPIOB)
 #define AS5600_DIR_PIN (1U << 10U)
 
 #define INA226_I2C_BUS (&hi2c1)
 #define INA226_I2C_ADDRESS (INA226_SLAVE_ADDRESS_A1_GND_A0_GND)
 
-#define DRV8825_PWM_TIMER (&htim2)
-#define DRV8825_PWM_CHANNEL (TIM_CHANNEL_1)
+#define DRV8825_STEP_TIMER (&htim2)
+#define DRV8825_STEP_CHANNEL (TIM_CHANNEL_2)
 
-#define DRV8825_DIR_GPIO (GPIOA)
-#define DRV8825_DIR_PIN (1U << 9U)
+#define DRV8825_DIR_GPIO (GPIOB)
+#define DRV8825_DIR_PIN (1U << 4U)
+
+#define DRV8825_EN_GPIO (GPIOB)
+#define DRV8825_EN_PIN (1U << 5U)
 
 #define WINDOW_WATCHDOG (&hwwdg)
 

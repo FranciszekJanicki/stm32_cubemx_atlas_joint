@@ -11,7 +11,6 @@
 
 // #define DELTA_TEST
 
-// #define USE_UART
 // #define USE_WATCHDOG
 
 // #define USE_LOG_TASK
