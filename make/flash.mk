@@ -1,6 +1,6 @@
 include make/common.mk
 
-FLASHER := STM32_Programmer_CLI
+FLASHER := stm32cubeprog_cli
 FLASH_PORT ?= SWD
 FLASH_BAUD ?=
 

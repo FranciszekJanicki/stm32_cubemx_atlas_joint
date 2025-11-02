@@ -46,21 +46,20 @@ int _read(int file, char* ptr, int len)
 
 int _write(int file, char* ptr, int len)
 {
+    if (file == 1) {
 #ifdef USE_LOG_TASK
-    StreamBufferHandle_t log_stream_buffer =
-        stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
-
-    return xStreamBufferSend(log_stream_buffer, ptr, len, len);
+        StreamBufferHandle_t log_stream_buffer =
+            stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
+        return xStreamBufferSend(log_stream_buffer, ptr, len, len);
 #else
-    SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
-
-    if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(len))) {
-        CDC_Transmit_FS((uint8_t*)ptr, len);
-        xSemaphoreGive(log_mutex);
-    }
-
-    return len;
+        SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
+        if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(len))) {
+            CDC_Transmit_FS((uint8_t*)ptr, len);
+            xSemaphoreGive(log_mutex);
+        }
+        return len;
 #endif
+    }
 }
 
 int _close(int file)
