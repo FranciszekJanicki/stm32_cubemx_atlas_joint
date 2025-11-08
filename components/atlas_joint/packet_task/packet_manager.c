@@ -162,9 +162,7 @@ static inline bool packet_manager_receive_joint_packet(
 {
     ATLAS_ASSERT(manager && packet);
 
-    packet_manager_parse_joint_packet(manager, packet);
-
-    return true;
+    return packet_manager_packet_spi_transfer(manager);
 }
 
 static atlas_err_t packet_manager_packet_joint_start_handler(

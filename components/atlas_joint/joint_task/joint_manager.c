@@ -791,8 +791,8 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     motor_driver_get_state(&manager->driver, &state);
 
     ATLAS_LOG(TAG,
-              "measure position: %f, reference position: %f, error position: "
-              "%f, control speed: %f, fault current: %f",
+              "measure: %.3f, reference: %.3f, error: %.3f, control: %.3f, "
+              "current: %.3f",
               state.measure_position,
               manager->reference.position,
               state.measure_position - manager->reference.position,
@@ -808,8 +808,6 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
-
-    atlas_joint_measure_print(&manager->measure);
 
     if (manager->has_reset &&
         fabsf(manager->parameters.home_position - manager->measure.position) <

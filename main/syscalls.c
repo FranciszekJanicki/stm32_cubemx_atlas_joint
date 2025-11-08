@@ -47,101 +47,111 @@ int _read(int file, char* ptr, int len)
 int _write(int file, char* ptr, int len)
 {
     if (file == 1) {
+        if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
 #ifdef USE_LOG_TASK
-        StreamBufferHandle_t log_stream_buffer =
-            stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
-        return xStreamBufferSend(log_stream_buffer, ptr, len, len);
+            StreamBufferHandle_t log_stream_buffer =
+                stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
+            return xStreamBufferSend(log_stream_buffer,
+                                     ptr,
+                                     len,
+                                     pdMS_TO_TICKS(1000));
 #else
-        SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
-        if (xSemaphoreTake(log_mutex, pdMS_TO_TICKS(len))) {
+            SemaphoreHandle_t log_mutex =
+                semaphore_manager_get(SEMAPHORE_TYPE_LOG);
+            if (xSemaphoreTake(log_mutex, portMAX_DELAY) == pdPASS) {
+                CDC_Transmit_FS((uint8_t*)ptr, len);
+                xSemaphoreGive(log_mutex);
+            }
+        } else {
             CDC_Transmit_FS((uint8_t*)ptr, len);
-            xSemaphoreGive(log_mutex);
         }
-        return len;
 #endif
+            return len;
+        }
+
+        return 0;
     }
-}
 
-int _close(int file)
-{
-    (void)file;
-    return -1;
-}
+    int _close(int file)
+    {
+        (void)file;
+        return -1;
+    }
 
-int _fstat(int file, struct stat* st)
-{
-    (void)file;
-    st->st_mode = S_IFCHR;
-    return 0;
-}
+    int _fstat(int file, struct stat* st)
+    {
+        (void)file;
+        st->st_mode = S_IFCHR;
+        return 0;
+    }
 
-int _isatty(int file)
-{
-    (void)file;
-    return 1;
-}
+    int _isatty(int file)
+    {
+        (void)file;
+        return 1;
+    }
 
-int _lseek(int file, int ptr, int dir)
-{
-    (void)file;
-    (void)ptr;
-    (void)dir;
-    return 0;
-}
+    int _lseek(int file, int ptr, int dir)
+    {
+        (void)file;
+        (void)ptr;
+        (void)dir;
+        return 0;
+    }
 
-int _open(char* path, int flags, ...)
-{
-    (void)path;
-    (void)flags;
-    return -1;
-}
+    int _open(char* path, int flags, ...)
+    {
+        (void)path;
+        (void)flags;
+        return -1;
+    }
 
-int _wait(int* status)
-{
-    (void)status;
-    errno = ECHILD;
-    return -1;
-}
+    int _wait(int* status)
+    {
+        (void)status;
+        errno = ECHILD;
+        return -1;
+    }
 
-int _unlink(char* name)
-{
-    (void)name;
-    errno = ENOENT;
-    return -1;
-}
+    int _unlink(char* name)
+    {
+        (void)name;
+        errno = ENOENT;
+        return -1;
+    }
 
-clock_t _times(struct tms* buf)
-{
-    (void)buf;
-    return -1;
-}
+    clock_t _times(struct tms * buf)
+    {
+        (void)buf;
+        return -1;
+    }
 
-int _stat(const char* file, struct stat* st)
-{
-    (void)file;
-    st->st_mode = S_IFCHR;
-    return 0;
-}
+    int _stat(const char* file, struct stat* st)
+    {
+        (void)file;
+        st->st_mode = S_IFCHR;
+        return 0;
+    }
 
-int _link(char* old, char* new)
-{
-    (void)old;
-    (void)new;
-    errno = EMLINK;
-    return -1;
-}
+    int _link(char* old, char* new)
+    {
+        (void)old;
+        (void)new;
+        errno = EMLINK;
+        return -1;
+    }
 
-int _fork(void)
-{
-    errno = EAGAIN;
-    return -1;
-}
+    int _fork(void)
+    {
+        errno = EAGAIN;
+        return -1;
+    }
 
-int _execve(char* name, char** argv, char** env)
-{
-    (void)name;
-    (void)argv;
-    (void)env;
-    errno = ENOMEM;
-    return -1;
-}
+    int _execve(char* name, char** argv, char** env)
+    {
+        (void)name;
+        (void)argv;
+        (void)env;
+        errno = ENOMEM;
+        return -1;
+    }

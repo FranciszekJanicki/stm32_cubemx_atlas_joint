@@ -9,6 +9,7 @@
 #include "spi.h"
 #include "tim.h"
 #include "wwdg.h"
+#include <stdbool.h>
 
 extern TIM_HandleTypeDef htim4;
 

@@ -69,7 +69,7 @@ int main(void)
     MX_WWDG_Init();
 #endif
 
-    HAL_Delay(500U);
+    HAL_Delay(1000U);
 
     atlas_joint_initialize(&config);
 }
