@@ -72,7 +72,7 @@ static inline void joint_delta_exti_callback(void)
 
 __attribute__((used)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_Pin == JOINT_SLAVE_SELECT_PIN) {
+    if (GPIO_Pin == JOINT_NSS_PIN) {
         // joint_slave_select_exti_callback();
     } else if (GPIO_Pin == JOINT_DELTA_PIN) {
         joint_delta_exti_callback();
@@ -81,7 +81,7 @@ __attribute__((used)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 __attribute__((used)) void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi)
 {
-    if (hspi->Instance == PACKET_SPI_BUS->Instance) {
+    if (hspi->Instance == JOINT_SPI_BUS->Instance) {
         packet_task_transfer_complete_callback();
     }
 }

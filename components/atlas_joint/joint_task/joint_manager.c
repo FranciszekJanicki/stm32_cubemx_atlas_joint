@@ -17,6 +17,8 @@
 
 static char const* const TAG = "atlas_joint:joint_manager";
 
+float drv8825_microstep_to_fraction(drv8825_microstep_t microstep);
+
 static inline bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
                                                      uint32_t clock_hz,
                                                      uint32_t max_prescaler,
@@ -51,6 +53,8 @@ static inline bool frequency_to_prescaler_and_period(uint32_t frequency_hz,
 
 static inline drv8825_err_t drv8825_gpio_initialize(void* user)
 {
+    joint_config_t* config = (joint_config_t*)user;
+
     return DRV8825_ERR_OK;
 }
 
@@ -65,9 +69,7 @@ static inline drv8825_err_t drv8825_gpio_write_pin(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_GPIO_WritePin(config->drv8825_dir_gpio,
-                      config->drv8825_dir_pin,
-                      (GPIO_PinState)!state);
+    HAL_GPIO_WritePin(config->drv8825_gpio, pin, (GPIO_PinState)state);
 
     return DRV8825_ERR_OK;
 }
@@ -161,9 +163,7 @@ static inline as5600_err_t as5600_gpio_write_pin(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_GPIO_WritePin(config->as5600_dir_gpio,
-                      config->as5600_dir_pin,
-                      (GPIO_PinState)state);
+    HAL_GPIO_WritePin(config->as5600_gpio, pin, (GPIO_PinState)state);
 
     return AS5600_ERR_OK;
 }
@@ -318,10 +318,6 @@ static inline ina226_err_t ina226_bus_write_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
     HAL_I2C_Mem_Write(config->ina226_i2c_bus,
                       config->ina226_i2c_address << 1U,
                       address,
@@ -329,8 +325,6 @@ static inline ina226_err_t ina226_bus_write_data(void* user,
                       (uint8_t*)data,
                       data_size,
                       10);
-    //     xSemaphoreGive(joint_mutex);
-    // }
 
     return INA226_ERR_OK;
 }
@@ -344,10 +338,6 @@ static inline ina226_err_t ina226_bus_read_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
     HAL_I2C_Mem_Read(config->ina226_i2c_bus,
                      config->ina226_i2c_address << 1U,
                      address,
@@ -355,8 +345,6 @@ static inline ina226_err_t ina226_bus_read_data(void* user,
                      data,
                      data_size,
                      10);
-    // xSemaphoreGive(joint_mutex);
-    // }
 
     return INA226_ERR_OK;
 }
@@ -372,11 +360,22 @@ static inline ina226_err_t ina226_initialize_chip(ina226_t* ina226,
 
 static inline step_motor_err_t step_motor_device_initialize(void* user)
 {
+    joint_manager_t* manager = (joint_manager_t*)user;
+
+    drv8825_set_enable(&manager->drv8825, true);
+    drv8825_set_direction(&manager->drv8825, DRV8825_DIRECTION_STOP);
+    drv8825_set_microstep(&manager->drv8825, manager->parameters.microstep);
+
     return STEP_MOTOR_ERR_OK;
 }
 
 static inline step_motor_err_t step_motor_device_deinitialize(void* user)
 {
+    joint_manager_t* manager = (joint_manager_t*)user;
+
+    drv8825_set_enable(&manager->drv8825, true);
+    drv8825_set_direction(&manager->drv8825, DRV8825_DIRECTION_STOP);
+
     return STEP_MOTOR_ERR_OK;
 }
 
@@ -579,7 +578,8 @@ static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
 
     if (as5600_initialize(
             &manager->as5600,
-            &(as5600_config_t){.max_angle = manager->parameters.max_position,
+            &(as5600_config_t){.dir_pin = manager->config.as5600_dir_pin,
+                               .max_angle = manager->parameters.max_position,
                                .min_angle = manager->parameters.min_position},
             &(as5600_interface_t){.gpio_user = &manager->config,
                                   .gpio_initialize = as5600_gpio_initialize,
@@ -618,7 +618,11 @@ static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
 
     if (drv8825_initialize(
             &manager->drv8825,
-            &(drv8825_config_t){},
+            &(drv8825_config_t){.pin_dir = manager->config.drv8825_dir_pin,
+                                .pin_enable = manager->config.drv8825_en_pin,
+                                .pin_mode0 = manager->config.drv8825_m0_pin,
+                                .pin_mode1 = manager->config.drv8825_m1_pin,
+                                .pin_mode2 = manager->config.drv8825_m2_pin},
             &(drv8825_interface_t){
                 .gpio_user = &manager->config,
                 .gpio_initialize = drv8825_gpio_initialize,
@@ -643,7 +647,9 @@ static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
                 .max_position = manager->parameters.max_position,
                 .min_speed = manager->parameters.min_speed,
                 .max_speed = manager->parameters.max_speed,
-                .step_change = manager->parameters.step_change},
+                .step_change = manager->parameters.step_change *
+                               drv8825_microstep_to_fraction(
+                                   manager->parameters.microstep)},
             &(step_motor_interface_t){
                 .device_user = manager,
                 .device_initialize = step_motor_device_initialize,
@@ -772,13 +778,6 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
                                   manager->reference.delta_time);
 
     if (err != MOTOR_DRIVER_ERR_OK) {
-        system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
-                                .type = SYSTEM_EVENT_TYPE_JOINT_FAULT,
-                                .payload.joint_fault = {}};
-        if (!joint_manager_send_system_event(&event)) {
-            return ATLAS_ERR_FAIL;
-        }
-
         motor_driver_set_speed(&manager->driver,
                                0.0F,
                                manager->reference.delta_time);
@@ -801,19 +800,6 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
     manager->measure.position = state.measure_position;
     manager->measure.current = state.fault_current;
-
-    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
-                            .type = SYSTEM_EVENT_TYPE_JOINT_MEASURE,
-                            .payload.joint_measure = manager->measure};
-    if (!joint_manager_send_system_event(&event)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (manager->has_reset &&
-        fabsf(manager->parameters.home_position - manager->measure.position) <
-            manager->parameters.dead_error) {
-        manager->has_reset = false;
-    }
 
     return ATLAS_ERR_OK;
 }
@@ -859,8 +845,11 @@ static atlas_err_t joint_manager_event_start_handler(
         return ATLAS_ERR_ALREADY_RUNNING;
     }
 
-    if (manager->has_fault) {
-        return ATLAS_ERR_IMPROPER_STATE;
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_STARTED,
+                            .payload.joint_started = {}};
+    if (!joint_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
     }
 
     manager->is_running = true;
@@ -885,68 +874,39 @@ static atlas_err_t joint_manager_event_stop_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    motor_driver_set_speed(&manager->driver,
-                           0.0F,
-                           manager->reference.delta_time);
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_STOPPED,
+                            .payload.joint_stopped = {}};
+    if (!joint_manager_send_system_event(&event)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     manager->is_running = false;
 
-#ifdef DELTA_TEST
-    manager->reference.delta_time = 0.01F;
-    manager->reference.position = 100.0F;
-    xTimerStop(timer_manager_get(TIMER_TYPE_DELTA_TEST), pdMS_TO_TICKS(1));
-#endif
-
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t joint_manager_event_reset_handler(
+static atlas_err_t joint_manager_command_set_reference_handler(
     joint_manager_t* manager,
-    joint_event_payload_reset_t const* reset)
+    atlas_joint_command_payload_set_reference_t const* set_reference)
 {
-    ATLAS_ASSERT(manager && reset);
+    ATLAS_ASSERT(manager && set_reference);
     ATLAS_LOG_FUNC(TAG);
 
     if (!manager->is_running) {
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (manager->measure.position != manager->parameters.home_position) {
-        manager->has_reset = true;
-    }
-
-    manager->reference.position = manager->parameters.home_position;
+    manager->reference = set_reference->reference;
 
     return ATLAS_ERR_OK;
 }
 
-static atlas_err_t joint_manager_event_reference_handler(
+static atlas_err_t joint_manager_command_set_parameters_handler(
     joint_manager_t* manager,
-    joint_event_payload_reference_t const* reference)
+    atlas_joint_command_payload_set_parameters_t const* set_parameters)
 {
-    ATLAS_ASSERT(manager && reference);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
-    }
-
-    if (manager->has_reset) {
-        return ATLAS_ERR_IMPROPER_STATE;
-    }
-
-    manager->reference = reference->reference;
-
-    atlas_joint_reference_print(&manager->reference);
-
-    return ATLAS_ERR_OK;
-}
-
-static atlas_err_t joint_manager_event_parameters_handler(
-    joint_manager_t* manager,
-    joint_event_payload_parameters_t const* parameters)
-{
-    ATLAS_ASSERT(manager && parameters);
+    ATLAS_ASSERT(manager && set_parameters);
     ATLAS_LOG_FUNC(TAG);
 
     if (manager->is_running) {
@@ -957,11 +917,28 @@ static atlas_err_t joint_manager_event_parameters_handler(
         return ATLAS_ERR_FAIL;
     }
 
-    manager->parameters = parameters->parameters;
+    manager->parameters = set_parameters->parameters;
 
     if (!joint_manager_initialize_drivers(manager)) {
         return ATLAS_ERR_FAIL;
     }
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t joint_manager_event_joint_command_handler(
+    joint_manager_t* manager,
+    joint_event_payload_joint_command_t const* joint_command)
+{
+    ATLAS_ASSERT(manager && joint_command);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!manager->is_running) {
+        return ATLAS_ERR_NOT_RUNNING;
+    }
+
+    atlas_joint_command_t const* command = &joint_command->command;
+    switch (command->type) {}
 
     return ATLAS_ERR_OK;
 }
@@ -980,19 +957,10 @@ static atlas_err_t joint_manager_event_handler(joint_manager_t* manager,
             return joint_manager_event_stop_handler(manager,
                                                     &event->payload.stop);
         }
-        case JOINT_EVENT_TYPE_RESET: {
-            return joint_manager_event_reset_handler(manager,
-                                                     &event->payload.reset);
-        }
-        case JOINT_EVENT_TYPE_REFERENCE: {
-            return joint_manager_event_reference_handler(
+        case JOINT_EVENT_TYPE_JOINT_COMMAND: {
+            return joint_manager_event_joint_command_handler(
                 manager,
-                &event->payload.reference);
-        }
-        case JOINT_EVENT_TYPE_PARAMETERS: {
-            return joint_manager_event_parameters_handler(
-                manager,
-                &event->payload.parameters);
+                &event->payload.joint_command);
         }
         default: {
             return ATLAS_ERR_UNKNOWN_EVENT;
@@ -1027,7 +995,6 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     manager->is_running = false;
     manager->has_fault = false;
-    manager->has_reset = false;
 
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
@@ -1048,7 +1015,7 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
                             .type = SYSTEM_EVENT_TYPE_JOINT_READY,
-                            .payload.joint_started = {}};
+                            .payload.joint_ready = {}};
     if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
