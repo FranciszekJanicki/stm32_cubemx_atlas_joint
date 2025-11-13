@@ -43,8 +43,10 @@ typedef struct {
     bool is_running;
     bool has_fault;
 
+    atlas_joint_state_t state;
     atlas_joint_measure_t measure;
     atlas_joint_reference_t reference;
+    atlas_joint_parameters_t parameters;
 
     as5600_t as5600;
     drv8825_t drv8825;
@@ -54,7 +56,6 @@ typedef struct {
     motor_driver_t driver;
 
     joint_config_t config;
-    joint_parameters_t parameters;
 } joint_manager_t;
 
 atlas_err_t joint_manager_initialize(joint_manager_t* manager,

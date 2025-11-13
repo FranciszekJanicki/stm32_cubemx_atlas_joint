@@ -88,19 +88,20 @@ static inline drv8825_err_t drv8825_pwm_start(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_TIM_PWM_Start_IT(config->drv8825_pwm_timer,
-                         config->drv8825_pwm_channel);
-
-    return DRV8825_ERR_OK;
+    return HAL_TIM_PWM_Start_IT(config->drv8825_pwm_timer,
+                                config->drv8825_pwm_channel) == HAL_OK
+               ? DRV8825_ERR_OK
+               : DRV8825_ERR_FAIL;
 }
 
 static inline drv8825_err_t drv8825_pwm_stop(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_TIM_PWM_Stop_IT(config->drv8825_pwm_timer, config->drv8825_pwm_channel);
-
-    return DRV8825_ERR_OK;
+    return HAL_TIM_PWM_Stop_IT(config->drv8825_pwm_timer,
+                               config->drv8825_pwm_channel) == HAL_OK
+               ? DRV8825_ERR_OK
+               : DRV8825_ERR_FAIL;
 }
 
 static inline drv8825_err_t drv8825_pwm_set_frequency(void* user,
@@ -122,27 +123,29 @@ static inline drv8825_err_t drv8825_pwm_set_frequency(void* user,
                                                     &prescaler,
                                                     &period);
 
-    if (result && period < 0xFFFFU && prescaler < 0xFFFFU) {
-        uint32_t compare = (uint32_t)((float32_t)period / 2.0F);
-
-        __HAL_TIM_DISABLE(config->drv8825_pwm_timer);
-        __HAL_TIM_SET_COUNTER(config->drv8825_pwm_timer, 0U);
-        __HAL_TIM_SET_PRESCALER(config->drv8825_pwm_timer, prescaler);
-        __HAL_TIM_SET_AUTORELOAD(config->drv8825_pwm_timer, period);
-        __HAL_TIM_SET_COMPARE(config->drv8825_pwm_timer,
-                              config->drv8825_pwm_channel,
-                              compare);
-        __HAL_TIM_ENABLE(config->drv8825_pwm_timer);
-
-        ATLAS_LOG(
-            TAG,
-            "clock: %u, frequency: %u, period: %u, prescaler: %u, compare: %u",
-            clock_hz,
-            frequency,
-            period,
-            prescaler,
-            compare);
+    if (!result || period >= 0xFFFFU || prescaler >= 0xFFFFU) {
+        return DRV8825_ERR_FAIL;
     }
+
+    uint32_t compare = (uint32_t)((float32_t)period / 2.0F);
+
+    __HAL_TIM_DISABLE(config->drv8825_pwm_timer);
+    __HAL_TIM_SET_COUNTER(config->drv8825_pwm_timer, 0U);
+    __HAL_TIM_SET_PRESCALER(config->drv8825_pwm_timer, prescaler);
+    __HAL_TIM_SET_AUTORELOAD(config->drv8825_pwm_timer, period);
+    __HAL_TIM_SET_COMPARE(config->drv8825_pwm_timer,
+                          config->drv8825_pwm_channel,
+                          compare);
+    __HAL_TIM_ENABLE(config->drv8825_pwm_timer);
+
+    ATLAS_LOG(
+        TAG,
+        "clock: %u, frequency: %u, period: %u, prescaler: %u, compare: %u",
+        clock_hz,
+        frequency,
+        period,
+        prescaler,
+        compare);
 
     return DRV8825_ERR_OK;
 }
@@ -181,7 +184,7 @@ static inline as5600_err_t as5600_adc_deinitialize(void* user)
 static inline as5600_err_t as5600_bus_initialize(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
-    ATLAS_LOG(TAG, "as5600 i2c address: %u", config->as5600_i2c_address);
+
     return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
                                  config->as5600_i2c_address << 1U,
                                  10U,
@@ -202,21 +205,15 @@ static inline as5600_err_t as5600_bus_write_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    HAL_I2C_Mem_Write(config->as5600_i2c_bus,
-                      config->as5600_i2c_address << 1U,
-                      address,
-                      I2C_MEMADD_SIZE_8BIT,
-                      data,
-                      data_size,
-                      100);
-    //     xSemaphoreGive(joint_mutex);
-    // }
-
-    return AS5600_ERR_OK;
+    return HAL_I2C_Mem_Write(config->as5600_i2c_bus,
+                             config->as5600_i2c_address << 1U,
+                             address,
+                             I2C_MEMADD_SIZE_8BIT,
+                             data,
+                             data_size,
+                             100) == HAL_OK
+               ? AS5600_ERR_OK
+               : AS5600_ERR_FAIL;
 }
 
 static inline as5600_err_t as5600_bus_read_data(void* user,
@@ -226,21 +223,15 @@ static inline as5600_err_t as5600_bus_read_data(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    // SemaphoreHandle_t joint_mutex =
-    // semaphore_manager_get(SEMAPHORE_TYPE_JOINT);
-
-    // if (xSemaphoreTake(joint_mutex, pdMS_TO_TICKS(1))) {
-    HAL_I2C_Mem_Read(config->as5600_i2c_bus,
-                     config->as5600_i2c_address << 1U,
-                     address,
-                     I2C_MEMADD_SIZE_8BIT,
-                     data,
-                     data_size,
-                     100);
-    //     xSemaphoreGive(joint_mutex);
-    // }
-
-    return AS5600_ERR_OK;
+    return HAL_I2C_Mem_Read(config->as5600_i2c_bus,
+                            config->as5600_i2c_address << 1U,
+                            address,
+                            I2C_MEMADD_SIZE_8BIT,
+                            data,
+                            data_size,
+                            100) == HAL_OK
+               ? AS5600_ERR_OK
+               : AS5600_ERR_FAIL;
 }
 
 static inline as5600_err_t as5600_initialize_chip(as5600_t* as5600,
@@ -318,15 +309,15 @@ static inline ina226_err_t ina226_bus_write_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_I2C_Mem_Write(config->ina226_i2c_bus,
-                      config->ina226_i2c_address << 1U,
-                      address,
-                      I2C_MEMADD_SIZE_8BIT,
-                      (uint8_t*)data,
-                      data_size,
-                      10);
-
-    return INA226_ERR_OK;
+    return HAL_I2C_Mem_Write(config->ina226_i2c_bus,
+                             config->ina226_i2c_address << 1U,
+                             address,
+                             I2C_MEMADD_SIZE_8BIT,
+                             (uint8_t*)data,
+                             data_size,
+                             100) == HAL_OK
+               ? INA226_ERR_OK
+               : INA226_ERR_FAIL;
 }
 
 static inline ina226_err_t ina226_bus_read_data(void* user,
@@ -338,15 +329,15 @@ static inline ina226_err_t ina226_bus_read_data(void* user,
 
     joint_config_t* config = (joint_config_t*)user;
 
-    HAL_I2C_Mem_Read(config->ina226_i2c_bus,
-                     config->ina226_i2c_address << 1U,
-                     address,
-                     I2C_MEMADD_SIZE_8BIT,
-                     data,
-                     data_size,
-                     10);
-
-    return INA226_ERR_OK;
+    return HAL_I2C_Mem_Read(config->ina226_i2c_bus,
+                            config->ina226_i2c_address << 1U,
+                            address,
+                            I2C_MEMADD_SIZE_8BIT,
+                            data,
+                            data_size,
+                            100) == HAL_OK
+               ? INA226_ERR_OK
+               : INA226_ERR_FAIL;
 }
 
 float32_t ina226_current_range_to_scale(float32_t);
@@ -853,6 +844,7 @@ static atlas_err_t joint_manager_event_start_handler(
     }
 
     manager->is_running = true;
+    manager->state = ATLAS_JOINT_STATE_READY;
 
 #ifdef DELTA_TEST
     manager->reference.delta_time = 0.01F;
@@ -882,6 +874,67 @@ static atlas_err_t joint_manager_event_stop_handler(
     }
 
     manager->is_running = false;
+    manager->state = ATLAS_JOINT_STATE_IDLE;
+
+    return ATLAS_ERR_OK;
+}
+
+static inline bool joint_manager_send_response(
+    atlas_joint_response_t const* response)
+{
+    ATLAS_ASSERT(response);
+
+    system_event_t event = {.origin = SYSTEM_EVENT_ORIGIN_JOINT,
+                            .type = SYSTEM_EVENT_TYPE_JOINT_RESPONSE,
+                            .payload.joint_response.response = *response};
+    return joint_manager_send_system_event(&event);
+}
+
+static atlas_err_t joint_manager_command_get_state_handler(
+    joint_manager_t* manager,
+    atlas_joint_command_payload_get_state_t const* get_state)
+{
+    ATLAS_ASSERT(manager && get_state);
+    ATLAS_LOG_FUNC(TAG);
+
+    atlas_joint_response_t response = {.type =
+                                           ATLAS_JOINT_RESPONSE_TYPE_GET_STATE,
+                                       .payload.get_state.success = false};
+
+    if (manager->state != ATLAS_JOINT_STATE_UNKNOWN) {
+        response.payload.get_state.state = manager->state;
+        response.payload.get_state.success = true;
+    }
+
+    if (!joint_manager_send_response(&response)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t joint_manager_command_set_state_handler(
+    joint_manager_t* manager,
+    atlas_joint_command_payload_set_state_t const* set_state)
+{
+    ATLAS_ASSERT(manager && set_state);
+    ATLAS_LOG_FUNC(TAG);
+
+    atlas_joint_response_t response = {.type =
+                                           ATLAS_JOINT_RESPONSE_TYPE_SET_STATE,
+                                       .payload.set_state.success = false};
+
+    if ((manager->state == ATLAS_JOINT_STATE_READY &&
+         set_state->state == ATLAS_JOINT_STATE_RUNNING) ||
+        (manager->state == ATLAS_JOINT_STATE_RUNNING &&
+         set_state->state == ATLAS_JOINT_STATE_READY)) {
+        manager->state = set_state->state;
+        response.payload.set_state.success = true;
+    }
+
+    if (!joint_manager_send_response(&response)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -893,11 +946,41 @@ static atlas_err_t joint_manager_command_set_reference_handler(
     ATLAS_ASSERT(manager && set_reference);
     ATLAS_LOG_FUNC(TAG);
 
-    if (!manager->is_running) {
-        return ATLAS_ERR_NOT_RUNNING;
+    atlas_joint_response_t response = {
+        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_REFERENCE,
+        .payload.set_reference.success = false};
+
+    if (manager->state == ATLAS_JOINT_STATE_RUNNING) {
+        manager->reference = set_reference->reference;
+        response.payload.set_reference.success = true;
     }
 
-    manager->reference = set_reference->reference;
+    if (!joint_manager_send_response(&response)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
+static atlas_err_t joint_manager_command_get_measure_handler(
+    joint_manager_t* manager,
+    atlas_joint_command_payload_get_measure_t const* get_measure)
+{
+    ATLAS_ASSERT(manager && get_measure);
+    ATLAS_LOG_FUNC(TAG);
+
+    atlas_joint_response_t response = {
+        .type = ATLAS_JOINT_RESPONSE_TYPE_GET_MEASURE,
+        .payload.get_measure.success = false};
+
+    if (manager->state == ATLAS_JOINT_STATE_RUNNING) {
+        response.payload.get_measure.measure = manager->measure;
+        response.payload.get_measure.success = true;
+    }
+
+    if (!joint_manager_send_response(&response)) {
+        return ATLAS_ERR_FAIL;
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -909,17 +992,23 @@ static atlas_err_t joint_manager_command_set_parameters_handler(
     ATLAS_ASSERT(manager && set_parameters);
     ATLAS_LOG_FUNC(TAG);
 
-    if (manager->is_running) {
-        return ATLAS_ERR_IMPROPER_STATE;
+    atlas_joint_response_t response = {
+        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_PARAMETERS,
+        .payload.set_parameters.success = false};
+
+    if (manager->state == ATLAS_JOINT_STATE_READY) {
+        if (!joint_manager_deinitialize_drivers(manager)) {
+            return ATLAS_ERR_FAIL;
+        }
+        manager->parameters = set_parameters->parameters;
+        if (!joint_manager_initialize_drivers(manager)) {
+            return ATLAS_ERR_FAIL;
+        }
+
+        response.payload.set_parameters.success = true;
     }
 
-    if (!joint_manager_deinitialize_drivers(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    manager->parameters = set_parameters->parameters;
-
-    if (!joint_manager_initialize_drivers(manager)) {
+    if (!joint_manager_send_response(&response)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -938,7 +1027,36 @@ static atlas_err_t joint_manager_event_joint_command_handler(
     }
 
     atlas_joint_command_t const* command = &joint_command->command;
-    switch (command->type) {}
+    switch (command->type) {
+        case ATLAS_JOINT_COMMAND_TYPE_GET_STATE: {
+            return joint_manager_command_get_state_handler(
+                manager,
+                &command->payload.get_state);
+        }
+        case ATLAS_JOINT_COMMAND_TYPE_SET_STATE: {
+            return joint_manager_command_set_state_handler(
+                manager,
+                &command->payload.set_state);
+        }
+        case ATLAS_JOINT_COMMAND_TYPE_SET_REFERENCE: {
+            return joint_manager_command_set_reference_handler(
+                manager,
+                &command->payload.set_reference);
+        }
+        case ATLAS_JOINT_COMMAND_TYPE_GET_MEASURE: {
+            return joint_manager_command_get_measure_handler(
+                manager,
+                &command->payload.get_measure);
+        }
+        case ATLAS_JOINT_COMMAND_TYPE_SET_PARAMETERS: {
+            return joint_manager_command_set_parameters_handler(
+                manager,
+                &command->payload.set_parameters);
+        }
+        default: {
+            return ATLAS_ERR_UNKNOWN_EVENT;
+        }
+    }
 
     return ATLAS_ERR_OK;
 }
@@ -995,6 +1113,8 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
 
     manager->is_running = false;
     manager->has_fault = false;
+
+    manager->state = ATLAS_JOINT_STATE_IDLE;
 
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
