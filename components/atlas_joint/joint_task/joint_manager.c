@@ -759,7 +759,8 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (manager->reference.delta_time == 0.0F || manager->has_fault) {
+    if (manager->reference.delta_time == 0.0F ||
+        manager->state == ATLAS_JOINT_STATE_FAULT) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -772,9 +773,9 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
         motor_driver_set_speed(&manager->driver,
                                0.0F,
                                manager->reference.delta_time);
-        manager->has_fault = true;
+        manager->state = ATLAS_JOINT_STATE_FAULT;
 
-        return ATLAS_ERR_OK;
+        return ATLAS_ERR_FAIL;
     }
 
     motor_driver_state_t state;
@@ -1112,16 +1113,11 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
     ATLAS_ASSERT(manager && config && parameters);
 
     manager->is_running = false;
-    manager->has_fault = false;
-
     manager->state = ATLAS_JOINT_STATE_IDLE;
-
     manager->measure.current = 0.0F;
     manager->measure.position = 0.0F;
-
     manager->reference.position = 0.0F;
     manager->reference.delta_time = 0.0F;
-
     manager->config = *config;
     manager->parameters = *parameters;
 

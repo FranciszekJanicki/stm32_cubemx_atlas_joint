@@ -53,17 +53,17 @@ int _write(int file, char* ptr, int len)
                 stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
             return xStreamBufferSend(log_stream_buffer,
                                      ptr,
-                                     len,
+                                     (size_t)len,
                                      pdMS_TO_TICKS(1000));
 #else
             SemaphoreHandle_t log_mutex =
                 semaphore_manager_get(SEMAPHORE_TYPE_LOG);
             if (xSemaphoreTake(log_mutex, portMAX_DELAY) == pdPASS) {
-                CDC_Transmit_FS((uint8_t*)ptr, len);
+                CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
                 xSemaphoreGive(log_mutex);
             }
         } else {
-            CDC_Transmit_FS((uint8_t*)ptr, len);
+            CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
         }
 #endif
             return len;

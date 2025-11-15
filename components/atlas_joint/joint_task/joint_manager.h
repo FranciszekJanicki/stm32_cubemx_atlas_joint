@@ -41,7 +41,6 @@ typedef atlas_joint_parameters_t joint_parameters_t;
 
 typedef struct {
     bool is_running;
-    bool has_fault;
 
     atlas_joint_state_t state;
     atlas_joint_measure_t measure;

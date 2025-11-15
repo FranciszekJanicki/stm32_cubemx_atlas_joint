@@ -272,8 +272,6 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
     manager->is_joint_running = false;
 
     memcpy(&manager->config, config, sizeof(*config));
-    memset(&manager->joint_measure, 0, sizeof(manager->joint_measure));
-    memset(&manager->joint_reference, 0, sizeof(manager->joint_reference));
 
 #ifdef USE_LOG_TASK
     if (!system_manager_send_log_notify(LOG_NOTIFY_START)) {

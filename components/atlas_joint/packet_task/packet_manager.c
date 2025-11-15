@@ -113,6 +113,24 @@ static inline bool packet_manager_get_rtc_timestamp(
     return true;
 }
 
+static inline bool packet_manager_update_startup_timestamp(
+    packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return packet_manager_get_rtc_timestamp(manager,
+                                            &manager->startup_timestamp);
+}
+
+static inline bool packet_manager_update_current_timestamp(
+    packet_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return packet_manager_get_rtc_timestamp(manager,
+                                            &manager->current_timestamp);
+}
+
 static inline bool packet_manager_packet_spi_transfer(packet_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
@@ -285,35 +303,28 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
 
 #ifdef JOINT_PACKET_TEST
     static int i = 0;
-    if (i == 0) {
-        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_START,
-                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
-        packet_manager_send_system_event(&event);
-    } else if (i == 100) {
-        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_STOP,
-                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
 
-        packet_manager_send_system_event(&event);
-        i = 0;
-    } else {
-        system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_REFERENCE,
-                                .origin = SYSTEM_EVENT_ORIGIN_PACKET};
+    atlas_joint_command_t command = {.type = ATLAS_JOINT_COMMAND_TYPE_SET_STATE,
+                                     .payload.set_state.state =
+                                         ATLAS_JOINT_STATE_RUNNING};
 
-        event.payload.joint_reference.reference.position = 10.0F;
-        event.payload.joint_reference.reference.delta_time = 0.001F;
-        packet_manager_send_system_event(&event);
-    }
-
-    i++;
-
+    system_event_t event = {.type = SYSTEM_EVENT_TYPE_JOINT_COMMAND,
+                            .origin = SYSTEM_EVENT_ORIGIN_PACKET,
+                            .payload.joint_command.command = command};
+    packet_manager_send_system_event(&event);
 #endif
 
 #ifdef ROBOT_PACKET_TEST
+    atlas_joint_response_t response = {
+        .type = ATLAS_JOINT_RESPONSE_TYPE_GET_STATE,
+        .payload.get_state = {.success = true,
+                              .state = ATLAS_JOINT_STATE_RUNNING}};
+
     atlas_robot_packet_t packet = {.type =
-                                       ATLAS_ROBOT_PACKET_TYPE_JOINT_MEASURE};
-    packet.origin = ATLAS_JOINT_NUM_1;
-    packet.payload.joint_measure.current = 1.0F;
-    packet.payload.joint_measure.position = 300.0F;
+                                       ATLAS_ROBOT_PACKET_TYPE_JOINT_RESPONSE,
+                                   .origin = manager->config.joint_num,
+                                   .timestamp = manager->current_timestamp,
+                                   .payload.joint_response = response};
     packet_manager_prepare_robot_packet(manager, &packet);
 #endif
 
@@ -449,8 +460,7 @@ static atlas_err_t packet_manager_event_joint_response_handler(
         return ATLAS_ERR_NOT_RUNNING;
     }
 
-    if (!packet_manager_get_rtc_timestamp(manager,
-                                          &manager->current_timestamp)) {
+    if (!packet_manager_update_current_timestamp(manager)) {
         return ATLAS_ERR_FAIL;
     }
 
@@ -526,14 +536,13 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
     memset(manager->receive_buffer, 0, sizeof(manager->receive_buffer));
     memset(manager->transmit_buffer, 0, sizeof(manager->transmit_buffer));
 
-    if (!packet_manager_packet_spi_transfer(manager)) {
+    if (packet_manager_packet_spi_transfer(manager)) {
         return ATLAS_ERR_FAIL;
     }
-
     packet_manager_deassert_data_ready(manager);
 
-    if (!packet_manager_get_rtc_timestamp(manager,
-                                          &manager->startup_timestamp)) {
+    if (!packet_manager_update_startup_timestamp(manager) ||
+        !packet_manager_update_current_timestamp(manager)) {
         return ATLAS_ERR_FAIL;
     }
 

@@ -18,9 +18,6 @@ typedef struct {
     bool is_packet_running;
     bool is_joint_running;
 
-    atlas_joint_measure_t joint_measure;
-    atlas_joint_reference_t joint_reference;
-
     system_config_t config;
 } system_manager_t;
 
