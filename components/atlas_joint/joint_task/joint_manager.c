@@ -898,13 +898,13 @@ static atlas_err_t joint_manager_command_get_state_handler(
     ATLAS_ASSERT(manager && get_state);
     ATLAS_LOG_FUNC(TAG);
 
-    atlas_joint_response_t response = {.type =
-                                           ATLAS_JOINT_RESPONSE_TYPE_GET_STATE,
-                                       .payload.get_state.success = false};
+    atlas_joint_response_t response = {
+        .result = ATLAS_JOINT_RESPONSE_RESULT_FAILURE,
+        .type = ATLAS_JOINT_RESPONSE_TYPE_GET_STATE};
 
     if (manager->state != ATLAS_JOINT_STATE_UNKNOWN) {
         response.payload.get_state.state = manager->state;
-        response.payload.get_state.success = true;
+        response.result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS;
     }
 
     if (!joint_manager_send_response(&response)) {
@@ -921,16 +921,16 @@ static atlas_err_t joint_manager_command_set_state_handler(
     ATLAS_ASSERT(manager && set_state);
     ATLAS_LOG_FUNC(TAG);
 
-    atlas_joint_response_t response = {.type =
-                                           ATLAS_JOINT_RESPONSE_TYPE_SET_STATE,
-                                       .payload.set_state.success = false};
+    atlas_joint_response_t response = {
+        .result = ATLAS_JOINT_RESPONSE_RESULT_FAILURE,
+        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_STATE};
 
     if ((manager->state == ATLAS_JOINT_STATE_READY &&
          set_state->state == ATLAS_JOINT_STATE_RUNNING) ||
         (manager->state == ATLAS_JOINT_STATE_RUNNING &&
          set_state->state == ATLAS_JOINT_STATE_READY)) {
         manager->state = set_state->state;
-        response.payload.set_state.success = true;
+        response.result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS;
     }
 
     if (!joint_manager_send_response(&response)) {
@@ -948,12 +948,12 @@ static atlas_err_t joint_manager_command_set_reference_handler(
     ATLAS_LOG_FUNC(TAG);
 
     atlas_joint_response_t response = {
-        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_REFERENCE,
-        .payload.set_reference.success = false};
+        .result = ATLAS_JOINT_RESPONSE_RESULT_FAILURE,
+        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_REFERENCE};
 
     if (manager->state == ATLAS_JOINT_STATE_RUNNING) {
         manager->reference = set_reference->reference;
-        response.payload.set_reference.success = true;
+        response.result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS;
     }
 
     if (!joint_manager_send_response(&response)) {
@@ -971,12 +971,12 @@ static atlas_err_t joint_manager_command_get_measure_handler(
     ATLAS_LOG_FUNC(TAG);
 
     atlas_joint_response_t response = {
-        .type = ATLAS_JOINT_RESPONSE_TYPE_GET_MEASURE,
-        .payload.get_measure.success = false};
+        .result = ATLAS_JOINT_RESPONSE_RESULT_FAILURE,
+        .type = ATLAS_JOINT_RESPONSE_TYPE_GET_MEASURE};
 
     if (manager->state == ATLAS_JOINT_STATE_RUNNING) {
         response.payload.get_measure.measure = manager->measure;
-        response.payload.get_measure.success = true;
+        response.result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS;
     }
 
     if (!joint_manager_send_response(&response)) {
@@ -994,8 +994,8 @@ static atlas_err_t joint_manager_command_set_parameters_handler(
     ATLAS_LOG_FUNC(TAG);
 
     atlas_joint_response_t response = {
-        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_PARAMETERS,
-        .payload.set_parameters.success = false};
+        .result = ATLAS_JOINT_RESPONSE_RESULT_FAILURE,
+        .type = ATLAS_JOINT_RESPONSE_TYPE_SET_PARAMETERS};
 
     if (manager->state == ATLAS_JOINT_STATE_READY) {
         if (!joint_manager_deinitialize_drivers(manager)) {
@@ -1005,8 +1005,7 @@ static atlas_err_t joint_manager_command_set_parameters_handler(
         if (!joint_manager_initialize_drivers(manager)) {
             return ATLAS_ERR_FAIL;
         }
-
-        response.payload.set_parameters.success = true;
+        response.result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS;
     }
 
     if (!joint_manager_send_response(&response)) {

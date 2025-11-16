@@ -316,9 +316,9 @@ static atlas_err_t packet_manager_notify_slave_select_handler(
 
 #ifdef ROBOT_PACKET_TEST
     atlas_joint_response_t response = {
+        .result = ATLAS_JOINT_RESPONSE_RESULT_SUCCESS,
         .type = ATLAS_JOINT_RESPONSE_TYPE_GET_STATE,
-        .payload.get_state = {.success = true,
-                              .state = ATLAS_JOINT_STATE_RUNNING}};
+        .payload.get_state = {.state = ATLAS_JOINT_STATE_RUNNING}};
 
     atlas_robot_packet_t packet = {.type =
                                        ATLAS_ROBOT_PACKET_TYPE_JOINT_RESPONSE,
