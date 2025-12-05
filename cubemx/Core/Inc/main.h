@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define AS5600_DIR_Pin GPIO_PIN_13
+#define AS5600_DIR_GPIO_Port GPIOC
 #define JOINT_DELTA_Pin GPIO_PIN_2
 #define JOINT_DELTA_GPIO_Port GPIOA
 #define JOINT_DELTA_EXTI_IRQn EXTI2_IRQn
@@ -70,22 +72,18 @@ void Error_Handler(void);
 #define SPI1_MISO_GPIO_Port GPIOA
 #define SPI1_MOSI_Pin GPIO_PIN_7
 #define SPI1_MOSI_GPIO_Port GPIOA
-#define DRV8825_M0_Pin GPIO_PIN_0
-#define DRV8825_M0_GPIO_Port GPIOB
-#define DRV8825_M1_Pin GPIO_PIN_1
-#define DRV8825_M1_GPIO_Port GPIOB
-#define DRV8825_M2_Pin GPIO_PIN_2
+#define DRV8825_DIR_Pin GPIO_PIN_15
+#define DRV8825_DIR_GPIO_Port GPIOA
+#define DRV8825_STEP_Pin GPIO_PIN_3
+#define DRV8825_STEP_GPIO_Port GPIOB
+#define DRV8825_M2_Pin GPIO_PIN_4
 #define DRV8825_M2_GPIO_Port GPIOB
-#define AS5600_DIR_Pin GPIO_PIN_10
-#define AS5600_DIR_GPIO_Port GPIOB
-#define TIM2_CH2_Pin GPIO_PIN_3
-#define TIM2_CH2_GPIO_Port GPIOB
-#define DRV8825_DIR_Pin GPIO_PIN_4
-#define DRV8825_DIR_GPIO_Port GPIOB
-#define DRV8825_EN_Pin GPIO_PIN_5
+#define DRV8825_M1_Pin GPIO_PIN_5
+#define DRV8825_M1_GPIO_Port GPIOB
+#define DRV8825_M0_Pin GPIO_PIN_6
+#define DRV8825_M0_GPIO_Port GPIOB
+#define DRV8825_EN_Pin GPIO_PIN_7
 #define DRV8825_EN_GPIO_Port GPIOB
-#define I2C1_SCL_Pin GPIO_PIN_8
-#define I2C1_SCL_GPIO_Port GPIOB
 #define I2C1_SDA_Pin GPIO_PIN_9
 #define I2C1_SDA_GPIO_Port GPIOB
 
