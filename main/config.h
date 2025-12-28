@@ -244,8 +244,8 @@ extern TIM_HandleTypeDef htim4;
 #define AS5600_I2C_ADDRESS (AS5600_SLAVE_ADDRESS)
 #define AS5600_I2C_BUS (&hi2c1)
 
-#define AS5600_GPIO (GPIOB)
-#define AS5600_DIR_PIN (1U << 10U)
+#define AS5600_DIR_GPIO (GPIOB)
+#define AS5600_DIR_PIN (1U << 7U)
 
 #define INA226_I2C_BUS (&hi2c1)
 #define INA226_I2C_ADDRESS (INA226_SLAVE_ADDRESS_A1_GND_A0_GND)
@@ -253,13 +253,20 @@ extern TIM_HandleTypeDef htim4;
 #define DRV8825_STEP_TIMER (&htim2)
 #define DRV8825_STEP_CHANNEL (TIM_CHANNEL_2)
 
-#define DRV8825_GPIO (GPIOB)
+#define DRV8825_M0_GPIO (GPIOB)
+#define DRV8825_M0_PIN (1U << 6U)
 
-#define DRV8825_M0_PIN (1U << 0U)
-#define DRV8825_M1_PIN (1U << 1U)
-#define DRV8825_M2_PIN (1U << 2U)
-#define DRV8825_DIR_PIN (1U << 4U)
-#define DRV8825_EN_PIN (1U << 5U)
+#define DRV8825_M1_GPIO (GPIOB)
+#define DRV8825_M1_PIN (1U << 5U)
+
+#define DRV8825_M2_GPIO (GPIOB)
+#define DRV8825_M2_PIN (1U << 4U)
+
+#define DRV8825_DIR_GPIO (GPIOA)
+#define DRV8825_DIR_PIN (1U << 15U)
+
+#define DRV8825_EN_GPIO (GPIOC)
+#define DRV8825_EN_PIN (1U << 13U)
 
 #define WINDOW_WATCHDOG (&hwwdg)
 

@@ -51,20 +51,20 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(AS5600_DIR_GPIO_Port, AS5600_DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(DRV8825_EN_GPIO_Port, DRV8825_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, JOINT_DRDY_Pin|DRV8825_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, DRV8825_M2_Pin|DRV8825_M1_Pin|DRV8825_M0_Pin|DRV8825_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, DRV8825_M2_Pin|DRV8825_M1_Pin|DRV8825_M0_Pin|AS5600_DIR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : AS5600_DIR_Pin */
-  GPIO_InitStruct.Pin = AS5600_DIR_Pin;
+  /*Configure GPIO pin : DRV8825_EN_Pin */
+  GPIO_InitStruct.Pin = DRV8825_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(AS5600_DIR_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(DRV8825_EN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : JOINT_DELTA_Pin */
   GPIO_InitStruct.Pin = JOINT_DELTA_Pin;
@@ -79,8 +79,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DRV8825_M2_Pin DRV8825_M1_Pin DRV8825_M0_Pin DRV8825_EN_Pin */
-  GPIO_InitStruct.Pin = DRV8825_M2_Pin|DRV8825_M1_Pin|DRV8825_M0_Pin|DRV8825_EN_Pin;
+  /*Configure GPIO pins : DRV8825_M2_Pin DRV8825_M1_Pin DRV8825_M0_Pin AS5600_DIR_Pin */
+  GPIO_InitStruct.Pin = DRV8825_M2_Pin|DRV8825_M1_Pin|DRV8825_M0_Pin|AS5600_DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

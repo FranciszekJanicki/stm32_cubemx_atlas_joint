@@ -9,7 +9,7 @@
 #define JOINT_PACKET_TEST
 #define ROBOT_PACKET_TEST
 
-// #define DELTA_TEST
+#define DELTA_TEST
 
 // #define USE_WATCHDOG
 

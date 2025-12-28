@@ -57,8 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define AS5600_DIR_Pin GPIO_PIN_13
-#define AS5600_DIR_GPIO_Port GPIOC
+#define DRV8825_EN_Pin GPIO_PIN_13
+#define DRV8825_EN_GPIO_Port GPIOC
 #define JOINT_DELTA_Pin GPIO_PIN_2
 #define JOINT_DELTA_GPIO_Port GPIOA
 #define JOINT_DELTA_EXTI_IRQn EXTI2_IRQn
@@ -82,8 +82,8 @@ void Error_Handler(void);
 #define DRV8825_M1_GPIO_Port GPIOB
 #define DRV8825_M0_Pin GPIO_PIN_6
 #define DRV8825_M0_GPIO_Port GPIOB
-#define DRV8825_EN_Pin GPIO_PIN_7
-#define DRV8825_EN_GPIO_Port GPIOB
+#define AS5600_DIR_Pin GPIO_PIN_7
+#define AS5600_DIR_GPIO_Port GPIOB
 #define I2C1_SDA_Pin GPIO_PIN_9
 #define I2C1_SDA_GPIO_Port GPIOB
 

@@ -19,20 +19,30 @@
 #include <stdint.h>
 
 typedef struct {
-    GPIO_TypeDef* drv8825_gpio;
+    GPIO_TypeDef* drv8825_en_gpio;
     uint16_t drv8825_en_pin;
+
+    GPIO_TypeDef* drv8825_dir_gpio;
     uint16_t drv8825_dir_pin;
+
+    GPIO_TypeDef* drv8825_en_gpio;
     uint16_t drv8825_m0_pin;
+
+    GPIO_TypeDef* drv8825_en_gpio;
     uint16_t drv8825_m1_pin;
+
+    GPIO_TypeDef* drv8825_en_gpio;
     uint16_t drv8825_m2_pin;
+
     TIM_HandleTypeDef* drv8825_pwm_timer;
     uint16_t drv8825_pwm_channel;
 
     I2C_HandleTypeDef* ina226_i2c_bus;
     uint16_t ina226_i2c_address;
 
-    GPIO_TypeDef* as5600_gpio;
+    GPIO_TypeDef* as5600_dir_gpio;
     uint16_t as5600_dir_pin;
+
     I2C_HandleTypeDef* as5600_i2c_bus;
     uint16_t as5600_i2c_address;
 } joint_config_t;
