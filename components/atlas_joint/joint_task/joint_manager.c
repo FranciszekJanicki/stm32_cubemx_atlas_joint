@@ -69,14 +69,14 @@ static inline drv8825_err_t drv8825_gpio_write_pin(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    GPIO_TypeDef* pin_to_gpio_port[] = {
-        [config->drv8825_dir_pin] = config->drv8825_dir_gpio,
-        [config->drv8825_en_pin] = config->drv8825_en_gpio,
-        [config->drv8825_m2_pin] = config->drv8825_m2_gpio,
-        [config->drv8825_m1_pin] = config->drv8825_m1_gpio,
-        [config->drv8825_m0_pin] = config->drv8825_m0_gpio};
+    static GPIO_TypeDef* pin_to_gpio[5U];
+    pin_to_gpio[config->drv8825_dir_pin] = config->drv8825_dir_gpio;
+    pin_to_gpio[config->drv8825_en_pin] = config->drv8825_en_gpio;
+    pin_to_gpio[config->drv8825_m2_pin] = config->drv8825_m2_gpio;
+    pin_to_gpio[config->drv8825_m1_pin] = config->drv8825_m1_gpio;
+    pin_to_gpio[config->drv8825_m0_pin] = config->drv8825_m0_gpio;
 
-    HAL_GPIO_WritePin(pin_to_gpio_port[pin], pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(pin_to_gpio[pin], pin, (GPIO_PinState)state);
 
     return DRV8825_ERR_OK;
 }

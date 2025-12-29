@@ -25,13 +25,13 @@ typedef struct {
     GPIO_TypeDef* drv8825_dir_gpio;
     uint16_t drv8825_dir_pin;
 
-    GPIO_TypeDef* drv8825_en_gpio;
+    GPIO_TypeDef* drv8825_m0_gpio;
     uint16_t drv8825_m0_pin;
 
-    GPIO_TypeDef* drv8825_en_gpio;
+    GPIO_TypeDef* drv8825_m1_gpio;
     uint16_t drv8825_m1_pin;
 
-    GPIO_TypeDef* drv8825_en_gpio;
+    GPIO_TypeDef* drv8825_m2_gpio;
     uint16_t drv8825_m2_pin;
 
     TIM_HandleTypeDef* drv8825_pwm_timer;
