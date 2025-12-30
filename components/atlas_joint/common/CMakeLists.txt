@@ -11,7 +11,7 @@ target_include_directories(common PUBLIC
 target_link_libraries(common PUBLIC
     atlas_core
     utility
-    stm32cubemx
+    cubemx
     bus_task
     handle_manager
 )

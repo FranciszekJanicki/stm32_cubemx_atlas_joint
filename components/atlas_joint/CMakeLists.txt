@@ -22,7 +22,7 @@ target_link_libraries(atlas_joint PUBLIC
     log_task
     packet_task
     watchdog_task
-    stm32cubemx
+    cubemx
 )
 
 target_compile_options(atlas_joint PUBLIC

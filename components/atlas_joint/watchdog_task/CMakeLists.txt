@@ -11,7 +11,7 @@ target_include_directories(watchdog_task PUBLIC
 
 target_link_libraries(watchdog_task PUBLIC
     common
-    stm32cubemx
+    cubemx
 )
 
 target_compile_options(watchdog_task PUBLIC
