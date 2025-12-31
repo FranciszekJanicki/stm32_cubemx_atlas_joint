@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 # Enable CMake support for ASM and C languages
-enable_language(C ASM)
+
 # STM32CubeMX generated symbols (macros)
 set(MX_Defines_Syms 
     USE_HAL_DRIVER 
@@ -47,8 +47,6 @@ set(MX_Application_Src
     #${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/syscalls.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32f411xe.s
 )
-
-set(MX_Application_Src ${MX_Application_Src} CACHE INTERNAL "CubeMX application sources")
 
 # STM32 HAL/LL Drivers
 set(STM32_Drivers_Src
@@ -107,16 +105,14 @@ set(FreeRTOS_Src
 set(MX_LINK_DIRS
 
 )
-set(MX_LINK_DIRS ${MX_LINK_DIRS} CACHE INTERNAL "CubeMX application sources")
 # Project static libraries
 set(MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
     USB_Device_Library
     FreeRTOS
-
+    
 )
-set(MX_LINK_LIBS ${MX_LINK_LIBS} CACHE INTERNAL "CubeMX application sources")
 
 # Interface library for includes and symbols
 add_library(stm32cubemx INTERFACE)
@@ -143,3 +139,8 @@ target_link_libraries(FreeRTOS PUBLIC stm32cubemx)
 if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
     message(ERROR "Generated code requires C11 or higher")
 endif()
+
+add_library(cubemx STATIC)
+target_sources(cubemx PRIVATE ${MX_Application_Src})
+target_link_libraries(cubemx PUBLIC ${MX_LINK_LIBS} stm32cubemx)
+target_link_directories(cubemx PUBLIC ${MX_LINK_DIRS})
