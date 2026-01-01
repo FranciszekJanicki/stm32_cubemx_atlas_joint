@@ -135,12 +135,12 @@ add_library(FreeRTOS OBJECT)
 target_sources(FreeRTOS PRIVATE ${FreeRTOS_Src})
 target_link_libraries(FreeRTOS PUBLIC stm32cubemx)
 
-# Validate that STM32CubeMX code is compatible with C standard
-if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
-    message(ERROR "Generated code requires C11 or higher")
-endif()
-
 add_library(cubemx STATIC)
 target_sources(cubemx PRIVATE ${MX_Application_Src})
 target_link_libraries(cubemx PUBLIC ${MX_LINK_LIBS} stm32cubemx)
 target_link_directories(cubemx PUBLIC ${MX_LINK_DIRS})
+
+# Validate that STM32CubeMX code is compatible with C standard
+if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
+    message(ERROR "Generated code requires C11 or higher")
+endif()

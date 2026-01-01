@@ -1,6 +1,6 @@
 include make/common.mk
 
-CUBEMX_BINARY ?= cubemx
+CUBEMX_BINARY ?= stm32cubemx
 CUBEMX_FILE ?= $(CUBEMX_DIR)/cubemx.ioc
 
 .PHONY: cubemx
