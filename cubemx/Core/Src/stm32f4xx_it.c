@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
- ******************************************************************************
- * @file    stm32f4xx_it.c
- * @brief   Interrupt Service Routines.
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file    stm32f4xx_it.c
+  * @brief   Interrupt Service Routines.
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -51,20 +51,7 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void hard_fault_handler_c(uint32_t* stack_frame)
-{
-    uint32_t r0 = stack_frame[0];
-    uint32_t r1 = stack_frame[1];
-    uint32_t r2 = stack_frame[2];
-    uint32_t r3 = stack_frame[3];
-    uint32_t r12 = stack_frame[4];
-    uint32_t lr = stack_frame[5];
-    uint32_t pc = stack_frame[6];
-    uint32_t psr = stack_frame[7];
 
-    while (1)
-        ;
-}
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -92,8 +79,9 @@ void NMI_Handler(void)
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-    while (1) {
-    }
+   while (1)
+  {
+  }
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
@@ -103,12 +91,6 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
-    __asm volatile("TST lr, #4       \n"
-                   "ITE EQ           \n"
-                   "MRSEQ r0, MSP    \n"
-                   "MRSNE r0, PSP    \n"
-                   "B hard_fault_handler_c \n");
 
   /* USER CODE END HardFault_IRQn 0 */
   while (1)

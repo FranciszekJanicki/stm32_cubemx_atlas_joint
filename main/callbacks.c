@@ -10,6 +10,8 @@
 #include "system_task.h"
 #include "wwdg.h"
 
+void xPortSysTickHandler(void);
+
 static inline void joint_delta_debounce_timer_callback(void)
 {
     static uint8_t debounce_counter = 0U;
@@ -44,6 +46,9 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
 {
     if (htim->Instance == SYSTICK_TIMER->Instance) {
         HAL_IncTick();
+        if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+            xPortSysTickHandler();
+        }
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
     } else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {

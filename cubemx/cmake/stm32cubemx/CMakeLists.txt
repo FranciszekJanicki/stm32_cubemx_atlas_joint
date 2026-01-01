@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 # Enable CMake support for ASM and C languages
-
+enable_language(C ASM)
 # STM32CubeMX generated symbols (macros)
 set(MX_Defines_Syms 
-    USE_HAL_DRIVER 
-    STM32F411xE
+	USE_HAL_DRIVER 
+	STM32F411xE
     $<$<CONFIG:Debug>:DEBUG>
 )
 
@@ -43,8 +43,8 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_it.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_hal_msp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_hal_timebase_tim.c
-    #${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/sysmem.c
-    #${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/syscalls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/sysmem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/syscalls.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32f411xe.s
 )
 
@@ -110,10 +110,9 @@ set(MX_LINK_LIBS
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
     USB_Device_Library
-    FreeRTOS
-    
+	FreeRTOS
+	
 )
-
 # Interface library for includes and symbols
 add_library(stm32cubemx INTERFACE)
 target_include_directories(stm32cubemx INTERFACE ${MX_Include_Dirs})
@@ -138,7 +137,6 @@ target_link_libraries(FreeRTOS PUBLIC stm32cubemx)
 add_library(cubemx STATIC)
 target_sources(cubemx PRIVATE ${MX_Application_Src})
 target_link_libraries(cubemx PUBLIC ${MX_LINK_LIBS} stm32cubemx)
-target_link_directories(cubemx PUBLIC ${MX_LINK_DIRS})
 
 # Validate that STM32CubeMX code is compatible with C standard
 if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
