@@ -510,6 +510,23 @@ static inline bool joint_manager_has_joint_event(void)
     return uxQueueMessagesWaiting(queue_manager_get(QUEUE_TYPE_JOINT)) > 0U;
 }
 
+#ifdef USE_LOG_TASK
+static inline bool joint_manager_send_log_notify(log_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_LOG), notify, eSetBits) ==
+           pdPASS;
+}
+#endif
+
+#ifdef USE_WATCHDOG_TASK
+static inline bool joint_manager_send_watchdog_notify(log_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_WATCHDOG),
+                       notify,
+                       eSetBits) == pdPASS;
+}
+#endif
+
 static inline bool joint_manager_send_system_notify(system_notify_t notify)
 {
     return xTaskNotify(task_manager_get(TASK_TYPE_SYSTEM),
@@ -1115,6 +1132,12 @@ atlas_err_t joint_manager_process(joint_manager_t* manager)
         }
     }
 
+#ifdef USE_WATCHDOG_TASK
+    if (!joint_manager_send_watchdog_notify(WATCHDOG_NOTIFY_JOINT_ALIVE)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
+
     return ATLAS_ERR_OK;
 }
 
@@ -1147,6 +1170,12 @@ atlas_err_t joint_manager_initialize(joint_manager_t* manager,
     if (!joint_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
+
+#ifdef USE_WATCHDOG_TASK
+    if (!joint_manager_send_watchdog_notify(WATCHDOG_NOTIFY_JOINT_ALIVE)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }

@@ -26,14 +26,17 @@ static inline void joint_delta_debounce_timer_callback(void)
 
 static inline void watchdog_refresh_timer_callback(void)
 {
-    if (is_kernel_started) {
 #ifdef USE_WATCHDOG_TASK
+    if (is_kernel_started) {
         watchdog_task_refresh_timer_callback();
-#endif
     } else {
         HAL_WWDG_Refresh(WINDOW_WATCHDOG);
         HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
     }
+#else
+    HAL_WWDG_Refresh(WINDOW_WATCHDOG);
+    HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
+#endif
 }
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(

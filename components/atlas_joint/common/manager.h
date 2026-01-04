@@ -13,8 +13,12 @@ typedef enum {
     TASK_TYPE_SYSTEM,
     TASK_TYPE_JOINT,
     TASK_TYPE_PACKET,
+#ifdef USE_LOG_TASK
     TASK_TYPE_LOG,
+#endif
+#ifdef USE_WATCHDOG_TASK
     TASK_TYPE_WATCHDOG,
+#endif
     TASK_TYPE_NUM,
 } TaskType_t;
 
@@ -26,12 +30,16 @@ typedef enum {
 } QueueType_t;
 
 typedef enum {
+#ifdef USE_LOG_TASK
     STREAM_BUFFER_TYPE_LOG,
+#endif
     STREAM_BUFFER_TYPE_NUM,
 } StreamBufferType_t;
 
 typedef enum {
+#ifndef USE_LOG_TASK
     SEMAPHORE_TYPE_LOG,
+#endif
     SEMAPHORE_TYPE_JOINT,
     SEMAPHORE_TYPE_NUM,
 } SemaphoreType_t;

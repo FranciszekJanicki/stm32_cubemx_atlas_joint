@@ -17,7 +17,9 @@ void atlas_joint_initialize(atlas_joint_config_t const* config)
 #ifdef USE_WATCHDOG_TASK
     ATLAS_ERR_CHECK(watchdog_task_initialize(&config->watchdog_ctx));
 #endif
+#ifdef USE_LOG_TASK
     ATLAS_ERR_CHECK(log_task_initialize(&config->log_ctx));
+#endif
     ATLAS_ERR_CHECK(packet_task_initialize(&config->packet_ctx));
     ATLAS_ERR_CHECK(system_task_initialize(&config->system_ctx));
     ATLAS_ERR_CHECK(joint_task_initialize(&config->joint_ctx));

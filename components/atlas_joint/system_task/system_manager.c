@@ -13,22 +13,6 @@
 
 static char const* const TAG = "atlas_joint:system_manager";
 
-static inline bool system_manager_reset_window_watchdog(
-    system_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-
-    return HAL_WWDG_Refresh(manager->config.window_watchdog) == HAL_OK;
-}
-
-static inline bool system_manager_reset_independent_watchdog(
-    system_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-
-    return HAL_IWDG_Refresh(manager->config.independent_watchdog) == HAL_OK;
-}
-
 static inline bool system_manager_get_delta_timer_pin(system_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
@@ -69,11 +53,22 @@ static inline bool system_manager_receive_system_event(system_event_t* event)
                          pdMS_TO_TICKS(1)) == pdPASS;
 }
 
+#ifdef USE_LOG_TASK
 static inline bool system_manager_send_log_notify(log_notify_t notify)
 {
     return xTaskNotify(task_manager_get(TASK_TYPE_LOG), notify, eSetBits) ==
            pdPASS;
 }
+#endif
+
+#ifdef USE_WATCHDOG_TASK
+static inline bool system_manager_send_watchdog_notify(log_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_WATCHDOG),
+                       notify,
+                       eSetBits) == pdPASS;
+}
+#endif
 
 static inline bool system_manager_receive_system_notify(system_notify_t* notify)
 {
@@ -85,32 +80,10 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
-static atlas_err_t system_manager_notify_refresh_timer_handler(
-    system_manager_t* manager)
-{
-    ATLAS_ASSERT(manager);
-    ATLAS_LOG_FUNC(TAG);
-
-    if (!system_manager_reset_window_watchdog(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    if (!system_manager_reset_independent_watchdog(manager)) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    return ATLAS_ERR_OK;
-}
-
 static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
                                                  system_notify_t notify)
 {
     ATLAS_ASSERT(manager);
-
-    if ((notify & WATCHDOG_NOTIFY_WATCHDOG_TIMER) ==
-        WATCHDOG_NOTIFY_WATCHDOG_TIMER) {
-        ATLAS_RET_ON_ERR(system_manager_notify_refresh_timer_handler(manager));
-    }
 
     return ATLAS_ERR_OK;
 }
@@ -300,6 +273,12 @@ atlas_err_t system_manager_process(system_manager_t* manager)
         }
     }
 
+#ifdef USE_WATCHDOG_TASK
+    if (!system_manager_send_watchdog_notify(WATCHDOG_NOTIFY_SYSTEM_ALIVE)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
+
     return ATLAS_ERR_OK;
 }
 
@@ -315,6 +294,12 @@ atlas_err_t system_manager_initialize(system_manager_t* manager,
 
 #ifdef USE_LOG_TASK
     if (!system_manager_send_log_notify(LOG_NOTIFY_START)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
+
+#ifdef USE_WATCHDOG_TASK
+    if (!system_manager_send_watchdog_notify(WATCHDOG_NOTIFY_SYSTEM_ALIVE)) {
         return ATLAS_ERR_FAIL;
     }
 #endif

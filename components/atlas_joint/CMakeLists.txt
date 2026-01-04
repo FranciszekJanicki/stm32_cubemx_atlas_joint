@@ -25,9 +25,15 @@ target_link_libraries(atlas_joint PUBLIC
 )
 
 if(USE_WATCHDOG_TASK)
-target_link_libraries(atlas_joint PUBLIC 
-    watchdog_task
-)
+    target_link_libraries(atlas_joint PUBLIC 
+        watchdog_task
+    )
+endif()
+
+if(USE_LOG_TASK)
+    target_link_libraries(atlas_joint PUBLIC 
+        log_task
+    )
 endif()
 
 target_compile_options(atlas_joint PUBLIC

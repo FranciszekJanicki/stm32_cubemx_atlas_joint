@@ -116,19 +116,6 @@ atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
     return ATLAS_ERR_OK;
 }
 
-#ifndef USE_WATCHDOG_TASK
-void system_task_refresh_timer_callback(void)
-{
-    BaseType_t task_woken = pdFALSE;
-    xTaskNotifyFromISR(task_manager_get(TASK_TYPE_SYSTEM),
-                       WATCHDOG_NOTIFY_WATCHDOG_TIMER,
-                       eSetBits,
-                       &task_woken);
-
-    portYIELD_FROM_ISR(task_woken);
-}
-#endif
-
 #undef SYSTEM_TASK_STACK_DEPTH
 #undef SYSTEM_TASK_PRIORITY
 #undef SYSTEM_TASK_NAME

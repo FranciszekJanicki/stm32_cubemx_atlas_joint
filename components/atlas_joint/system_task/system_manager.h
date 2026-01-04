@@ -14,8 +14,6 @@ typedef struct {
     uint16_t delta_timer_pin;
 #ifndef USE_WATCHDOG_TASK
     TIM_HandleTypeDef* refresh_timer;
-    WWDG_HandleTypeDef* window_watchdog;
-    IWDG_HandleTypeDef* independent_watchdog;
 #endif
 } system_config_t;
 

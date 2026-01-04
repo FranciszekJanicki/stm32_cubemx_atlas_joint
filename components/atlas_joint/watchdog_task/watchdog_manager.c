@@ -104,8 +104,8 @@ static atlas_err_t watchdog_manager_notify_handler(watchdog_manager_t* manager,
 {
     ATLAS_ASSERT(manager);
 
-    if ((notify & WATCHDOG_NOTIFY_WATCHDOG_TIMER) ==
-        WATCHDOG_NOTIFY_WATCHDOG_TIMER) {
+    if ((notify & WATCHDOG_NOTIFY_REFRESH_TIMER) ==
+        WATCHDOG_NOTIFY_REFRESH_TIMER) {
         ATLAS_RET_ON_ERR(
             watchdog_manager_notify_refresh_timer_handler(manager));
     }

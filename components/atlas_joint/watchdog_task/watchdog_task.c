@@ -48,7 +48,7 @@ void watchdog_task_refresh_timer_callback(void)
 {
     BaseType_t task_woken = pdFALSE;
     xTaskNotifyFromISR(task_manager_get(TASK_TYPE_WATCHDOG),
-                       WATCHDOG_NOTIFY_WATCHDOG_TIMER,
+                       WATCHDOG_NOTIFY_REFRESH_TIMER,
                        eSetBits,
                        &task_woken);
 

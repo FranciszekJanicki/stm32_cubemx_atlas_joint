@@ -24,6 +24,23 @@ static inline bool packet_manager_send_system_event(system_event_t const* event)
                       pdMS_TO_TICKS(1)) == pdPASS;
 }
 
+#ifdef USE_LOG_TASK
+static inline bool packet_manager_send_log_notify(log_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_LOG), notify, eSetBits) ==
+           pdPASS;
+}
+#endif
+
+#ifdef USE_WATCHDOG_TASK
+static inline bool packet_manager_send_watchdog_notify(log_notify_t notify)
+{
+    return xTaskNotify(task_manager_get(TASK_TYPE_WATCHDOG),
+                       notify,
+                       eSetBits) == pdPASS;
+}
+#endif
+
 static inline bool packet_manager_send_system_notify(system_notify_t notify)
 {
     return xTaskNotify(task_manager_get(TASK_TYPE_SYSTEM), notify, eSetBits) ==
@@ -517,6 +534,12 @@ atlas_err_t packet_manager_process(packet_manager_t* manager)
         }
     }
 
+#ifdef USE_WATCHDOG_TASK
+    if (!packet_manager_send_watchdog_notify(WATCHDOG_NOTIFY_PACKET_ALIVE)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
+
     return ATLAS_ERR_OK;
 }
 
@@ -552,6 +575,12 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
     if (!packet_manager_send_system_event(&event)) {
         return ATLAS_ERR_FAIL;
     }
+
+#ifdef USE_WATCHDOG_TASK
+    if (!packet_manager_send_watchdog_notify(WATCHDOG_NOTIFY_PACKET_ALIVE)) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }
