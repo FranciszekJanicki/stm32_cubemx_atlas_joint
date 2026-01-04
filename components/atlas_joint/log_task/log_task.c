@@ -31,7 +31,6 @@ atlas_err_t log_task_initialize(log_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-#ifdef USE_LOG_TASK
     static StaticStreamBuffer_t log_stream_buffer_buffer;
     static uint8_t log_stream_buffer_storage[LOG_STREAM_BUFFER_STORAGE_SIZE];
 
@@ -55,8 +54,7 @@ atlas_err_t log_task_initialize(log_task_ctx_t* task_ctx)
                                     .bus_buffer_size = LOG_BUFFER_STORAGE_SIZE,
                                     .stream_buffer = log_stream_buffer};
     bus_ctx.interface =
-        (bus_interface_t){.bus_user = task_ctx->log_bus,
-                          .bus_transmit_data = bus_task_bus_transmit_data};
+        (bus_interface_t){.bus_transmit_data = bus_task_bus_transmit_data};
 
     TaskHandle_t log_task = bus_task_create_task(&bus_ctx,
                                                  LOG_TASK_NAME,
@@ -69,25 +67,13 @@ atlas_err_t log_task_initialize(log_task_ctx_t* task_ctx)
     }
 
     task_manager_set(TASK_TYPE_LOG, log_task);
-#else
-    static StaticSemaphore_t log_mutex_buffer;
 
-    SemaphoreHandle_t log_mutex =
-        xSemaphoreCreateMutexStatic(&log_mutex_buffer);
-    if (log_mutex == NULL) {
-        return ATLAS_ERR_FAIL;
-    }
-
-    semaphore_manager_set(SEMAPHORE_TYPE_LOG, log_mutex);
-#endif
     return ATLAS_ERR_OK;
 }
 
 void log_task_transmit_done_callback(void)
 {
-#ifdef USE_LOG_TASK
     bus_task_transmit_done_callback(task_manager_get(TASK_TYPE_LOG));
-#endif
 }
 
 #undef LOG_TASK_STACK_DEPTH

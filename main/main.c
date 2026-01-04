@@ -1,16 +1,6 @@
 #include "main.h"
 #include "atlas_joint.h"
 #include "config.h"
-#include "crc.h"
-#include "gpio.h"
-#include "i2c.h"
-#include "iwdg.h"
-#include "main.h"
-#include "rtc.h"
-#include "spi.h"
-#include "tim.h"
-#include "usb_device.h"
-#include "wwdg.h"
 
 static atlas_joint_config_t config = {
     .log_ctx = {},
@@ -62,7 +52,11 @@ void SystemClock_Config(void);
 int main(void)
 {
     HAL_Init();
+    MX_WWDG_Init();
+    HAL_WWDG_Refresh(&hwwdg);
     SystemClock_Config();
+
+    HAL_Delay(50);
 
     MX_GPIO_Init();
     MX_USB_DEVICE_Init();
@@ -72,7 +66,7 @@ int main(void)
     MX_SPI1_Init();
     MX_RTC_Init();
     MX_CRC_Init();
-#ifdef USE_WATCHDOG
+#ifdef USE_WATCHDOG_TASK
     MX_TIM5_Init();
     MX_IWDG_Init();
     MX_WWDG_Init();

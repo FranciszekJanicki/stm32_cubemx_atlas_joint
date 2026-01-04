@@ -9,10 +9,10 @@ OPENOCD_TARGET ?=
 debug: $(PROJECT_BINARY)
 	@$(OPENOCD) -f "$(OPENOCD_INTERFACE)" -f "$(OPENOCD_TARGET)" & \
 	OPENOCD_PID=$$!; \
-	sleep 1; \
+	trap "kill $$OPENOCD_PID" EXIT; \
+	while ! nc -z localhost 3333; do sleep 0.1; done; \
 	$(OPENOCD_GDB) "$<" \
 		-ex "target extended-remote :3333" \
 		-ex "load" \
 		-ex "monitor reset halt" \
-		-ex "continue"; \
-	kill $$OPENOCD_PID
+		-ex "continue"

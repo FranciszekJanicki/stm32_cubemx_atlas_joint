@@ -77,18 +77,14 @@ atlas_err_t watchdog_task_initialize(watchdog_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-#ifdef USE_WATCHDOG
     ATLAS_RET_ON_ERR(watchdog_task_start_refresh_timer(task_ctx));
-#endif
 
-#ifdef USE_WATCHDOG_TASK
     TaskHandle_t watchdog_task = watchdog_task_create_task(task_ctx);
     if (watchdog_task == NULL) {
         return ATLAS_ERR_FAIL;
     }
 
     task_manager_set(TASK_TYPE_WATCHDOG, watchdog_task);
-#endif
 
     return ATLAS_ERR_OK;
 }

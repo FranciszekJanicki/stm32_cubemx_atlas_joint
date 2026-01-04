@@ -1,15 +1,33 @@
 #include "system_manager.h"
 #include "FreeRTOS.h"
 #include "common.h"
+#include "iwdg.h"
 #include "queue.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_rtc.h"
 #include "task.h"
+#include "wwdg.h"
 #include <stdint.h>
 #include <string.h>
 
 static char const* const TAG = "atlas_joint:system_manager";
+
+static inline bool system_manager_reset_window_watchdog(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return HAL_WWDG_Refresh(manager->config.window_watchdog) == HAL_OK;
+}
+
+static inline bool system_manager_reset_independent_watchdog(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return HAL_IWDG_Refresh(manager->config.independent_watchdog) == HAL_OK;
+}
 
 static inline bool system_manager_get_delta_timer_pin(system_manager_t* manager)
 {
@@ -67,10 +85,32 @@ static inline bool system_manager_receive_system_notify(system_notify_t* notify)
                            pdMS_TO_TICKS(1)) == pdPASS;
 }
 
+static atlas_err_t system_manager_notify_refresh_timer_handler(
+    system_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+    ATLAS_LOG_FUNC(TAG);
+
+    if (!system_manager_reset_window_watchdog(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    if (!system_manager_reset_independent_watchdog(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
+
+    return ATLAS_ERR_OK;
+}
+
 static atlas_err_t system_manager_notify_handler(system_manager_t* manager,
                                                  system_notify_t notify)
 {
     ATLAS_ASSERT(manager);
+
+    if ((notify & WATCHDOG_NOTIFY_WATCHDOG_TIMER) ==
+        WATCHDOG_NOTIFY_WATCHDOG_TIMER) {
+        ATLAS_RET_ON_ERR(system_manager_notify_refresh_timer_handler(manager));
+    }
 
     return ATLAS_ERR_OK;
 }

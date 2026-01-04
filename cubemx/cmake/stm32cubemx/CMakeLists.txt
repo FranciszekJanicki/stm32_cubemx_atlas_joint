@@ -43,8 +43,7 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_it.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_hal_msp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32f4xx_hal_timebase_tim.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/sysmem.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/syscalls.c
+
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32f411xe.s
 )
 
@@ -136,6 +135,7 @@ target_link_libraries(FreeRTOS PUBLIC stm32cubemx)
 
 add_library(cubemx STATIC)
 target_sources(cubemx PRIVATE ${MX_Application_Src})
+target_link_directories(cubemx PUBLIC ${MX_LINK_DIRS})
 target_link_libraries(cubemx PUBLIC ${MX_LINK_LIBS} stm32cubemx)
 
 # Validate that STM32CubeMX code is compatible with C standard

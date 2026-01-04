@@ -21,9 +21,14 @@ target_link_libraries(atlas_joint PUBLIC
     joint_task
     log_task
     packet_task
-    watchdog_task
     cubemx
 )
+
+if(USE_WATCHDOG_TASK)
+target_link_libraries(atlas_joint PUBLIC 
+    watchdog_task
+)
+endif()
 
 target_compile_options(atlas_joint PUBLIC
     -std=c23

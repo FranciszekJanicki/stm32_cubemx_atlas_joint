@@ -1,3 +1,6 @@
+set(USE_LOG_TASK 1)
+
+if(USE_LOG_TASK)
 add_library(log_task STATIC)
 
 target_sources(log_task PRIVATE 
@@ -43,3 +46,4 @@ target_compile_options(log_task PUBLIC
     -Wpointer-arith
     -Wstrict-aliasing=2
 )
+endif()

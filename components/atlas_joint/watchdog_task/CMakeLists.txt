@@ -1,3 +1,6 @@
+option(USE_WATCHDOG_TASK "Enable watchdog task" ON)
+
+if(USE_WATCHDOG_TASK)
 add_library(watchdog_task STATIC)
 
 target_sources(watchdog_task PRIVATE 
@@ -44,3 +47,8 @@ target_compile_options(watchdog_task PUBLIC
     -Wpointer-arith
     -Wstrict-aliasing=2
 )
+
+target_compile_definitions(watchdog_task PUBLIC
+    USE_WATCHDOG_TASK
+)
+endif()

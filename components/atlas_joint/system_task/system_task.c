@@ -53,9 +53,42 @@ static QueueHandle_t system_task_create_queue(void)
                               &system_queue_buffer);
 }
 
+#ifndef USE_LOG_TASK
+static SemaphoreHandle_t system_task_create_log_mutex(void)
+{
+    static StaticSemaphore_t log_mutex_buffer;
+
+    return xSemaphoreCreateMutexStatic(&log_mutex_buffer);
+}
+#endif
+
+#ifndef USE_WATCHDOG_TASK
+atlas_err_t system_task_start_refresh_timer(system_task_ctx_t* task_ctx)
+{
+    ATLAS_ASSERT(task_ctx);
+
+    return HAL_TIM_Base_Start_IT(task_ctx->config.refresh_timer) == HAL_OK
+               ? ATLAS_ERR_OK
+               : ATLAS_ERR_FAIL;
+}
+
+atlas_err_t system_task_stop_refresh_timer(system_task_ctx_t* task_ctx)
+{
+    ATLAS_ASSERT(task_ctx);
+
+    return HAL_TIM_Base_Stop_IT(task_ctx->config.refresh_timer) == HAL_OK
+               ? ATLAS_ERR_OK
+               : ATLAS_ERR_FAIL;
+}
+#endif
+
 atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
+
+#ifndef USE_WATCHDOG_TASK
+    ATLAS_RET_ON_ERR(system_task_start_refresh_timer(task_ctx));
+#endif
 
     QueueHandle_t system_queue = system_task_create_queue();
     if (system_queue == NULL) {
@@ -71,8 +104,30 @@ atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
 
     task_manager_set(TASK_TYPE_SYSTEM, system_task);
 
+#ifndef USE_LOG_TASK
+    SemaphoreHandle_t log_mutex = system_task_create_log_mutex();
+    if (log_mutex == NULL) {
+        return ATLAS_ERR_FAIL;
+    }
+#endif
+
+    semaphore_manager_set(SEMAPHORE_TYPE_LOG, log_mutex);
+
     return ATLAS_ERR_OK;
 }
+
+#ifndef USE_WATCHDOG_TASK
+void system_task_refresh_timer_callback(void)
+{
+    BaseType_t task_woken = pdFALSE;
+    xTaskNotifyFromISR(task_manager_get(TASK_TYPE_SYSTEM),
+                       WATCHDOG_NOTIFY_WATCHDOG_TIMER,
+                       eSetBits,
+                       &task_woken);
+
+    portYIELD_FROM_ISR(task_woken);
+}
+#endif
 
 #undef SYSTEM_TASK_STACK_DEPTH
 #undef SYSTEM_TASK_PRIORITY

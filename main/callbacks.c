@@ -2,13 +2,11 @@
 #include "atlas_joint.h"
 #include "common.h"
 #include "config.h"
-#include "iwdg.h"
 #include "log_task.h"
 #include "packet_task.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
 #include "system_task.h"
-#include "wwdg.h"
 
 void xPortSysTickHandler(void);
 
@@ -28,17 +26,14 @@ static inline void joint_delta_debounce_timer_callback(void)
 
 static inline void watchdog_refresh_timer_callback(void)
 {
-#ifdef USE_WATCHDOG_TASK
     if (is_kernel_started) {
+#ifdef USE_WATCHDOG_TASK
         watchdog_task_refresh_timer_callback();
+#endif
     } else {
         HAL_WWDG_Refresh(WINDOW_WATCHDOG);
         HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
     }
-#else
-    HAL_WWDG_Refresh(WINDOW_WATCHDOG);
-    HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
-#endif
 }
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
@@ -51,6 +46,7 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
         }
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
+
     } else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {
         watchdog_refresh_timer_callback();
     }
