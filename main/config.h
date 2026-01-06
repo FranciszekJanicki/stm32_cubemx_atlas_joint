@@ -9,6 +9,8 @@
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
+#include "usb_device.h"
+#include "usbd_cdc.h"
 #include "wwdg.h"
 #include <stdbool.h>
 

@@ -8,8 +8,6 @@
 #include "stm32f4xx_hal.h"
 #include "system_task.h"
 
-void xPortSysTickHandler(void);
-
 static inline void joint_delta_debounce_timer_callback(void)
 {
     static uint8_t debounce_counter = 0U;
@@ -42,11 +40,8 @@ static inline void watchdog_refresh_timer_callback(void)
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
 {
-    if (htim->Instance == SYSTICK_TIMER->Instance) {
+    if (htim->Instance == TIM4) {
         HAL_IncTick();
-        if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
-            xPortSysTickHandler();
-        }
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
 

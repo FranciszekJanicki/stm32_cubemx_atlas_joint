@@ -1,4 +1,4 @@
-option(USE_WATCHDOG_TASK "Enable watchdog task" ON)
+option(USE_WATCHDOG_TASK "Enable watchdog task" OFF)
 
 if(USE_WATCHDOG_TASK)
     add_library(watchdog_task STATIC)

@@ -21,7 +21,6 @@ typedef enum {
         (PACKET_NOTIFY_SLAVE_SELECT | PACKET_NOTIFY_TRANSFER_COMPLETE),
 } packet_notify_t;
 
-#ifdef USE_LOG_TASK
 typedef enum {
     LOG_NOTIFY_START = BUS_ACTION_TRANSMIT,
     LOG_NOTIFY_STOP = BUS_NOTIFY_STOP,
@@ -29,9 +28,7 @@ typedef enum {
     LOG_NOTIFY_ALL =
         (LOG_NOTIFY_START | LOG_NOTIFY_STOP | LOG_NOTIFY_TRANSMIT_DONE),
 } log_notify_t;
-#endif
 
-#ifdef USE_WATCHDOG_TASK
 typedef enum {
     WATCHDOG_NOTIFY_REFRESH_TIMER = (1 << 0),
     WATCHDOG_NOTIFY_JOINT_ALIVE = (1 << 1),
@@ -41,6 +38,5 @@ typedef enum {
         (WATCHDOG_NOTIFY_REFRESH_TIMER | WATCHDOG_NOTIFY_JOINT_ALIVE |
          WATCHDOG_NOTIFY_SYSTEM_ALIVE | WATCHDOG_NOTIFY_PACKET_ALIVE),
 } watchdog_notify_t;
-#endif
 
 #endif // COMMON_NOTIFY_H

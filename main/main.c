@@ -3,7 +3,6 @@
 #include "config.h"
 
 static atlas_joint_config_t config = {
-    .log_ctx = {},
     .system_ctx = {.config = {.delta_timer_gpio = JOINT_DELTA_GPIO,
                               .delta_timer_pin = JOINT_DELTA_PIN}},
     .packet_ctx = {.config = {.joint_num = JOINT_NUM,
@@ -51,12 +50,15 @@ void SystemClock_Config(void);
 
 int main(void)
 {
+    SysTick->CTRL = 0; // Disable SysTick
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+    NVIC_DisableIRQ(SysTick_IRQn);
+
+
     HAL_Init();
-    MX_WWDG_Init();
     HAL_WWDG_Refresh(&hwwdg);
     SystemClock_Config();
-
-    HAL_Delay(50);
 
     MX_GPIO_Init();
     MX_USB_DEVICE_Init();
@@ -67,9 +69,9 @@ int main(void)
     MX_RTC_Init();
     MX_CRC_Init();
 #ifdef USE_WATCHDOG_TASK
-    MX_TIM5_Init();
-    MX_IWDG_Init();
-    MX_WWDG_Init();
+    // MX_TIM5_Init();
+    // MX_IWDG_Init();
+    // MX_WWDG_Init();
 #endif
 
     HAL_Delay(1000U);
