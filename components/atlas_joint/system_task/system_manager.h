@@ -12,7 +12,7 @@
 typedef struct {
     GPIO_TypeDef* delta_timer_gpio;
     uint16_t delta_timer_pin;
-#ifndef USE_WATCHDOG_TASK
+#if !defined(USE_WATCHDOG_TASK) && defined(USE_WATCHDOG)
     TIM_HandleTypeDef* refresh_timer;
 #endif
 } system_config_t;

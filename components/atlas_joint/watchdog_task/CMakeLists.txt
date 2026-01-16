@@ -1,6 +1,12 @@
+option(USE_WATCHDOG "Enable watchdog" OFF)
+
+if (USE_WATCHDOG)
+    add_compile_definitions(USE_WATCHDOG)
+endif()
+
 option(USE_WATCHDOG_TASK "Enable watchdog task" OFF)
 
-if(USE_WATCHDOG_TASK)
+if(USE_WATCHDOG AND USE_WATCHDOG_TASK)
     add_library(watchdog_task STATIC)
 
     target_sources(watchdog_task PRIVATE 

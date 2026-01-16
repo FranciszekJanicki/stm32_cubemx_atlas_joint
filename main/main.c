@@ -50,28 +50,21 @@ void SystemClock_Config(void);
 
 int main(void)
 {
-    SysTick->CTRL = 0; // Disable SysTick
-    SysTick->LOAD = 0;
-    SysTick->VAL = 0;
-    NVIC_DisableIRQ(SysTick_IRQn);
-
-
     HAL_Init();
-    HAL_WWDG_Refresh(&hwwdg);
     SystemClock_Config();
 
     MX_GPIO_Init();
+    MX_CRC_Init();
     MX_USB_DEVICE_Init();
+    MX_I2C1_Init();
+    MX_RTC_Init();
+    MX_SPI1_Init();
     MX_TIM1_Init();
     MX_TIM2_Init();
-    MX_I2C1_Init();
-    MX_SPI1_Init();
-    MX_RTC_Init();
-    MX_CRC_Init();
-#ifdef USE_WATCHDOG_TASK
-    // MX_TIM5_Init();
-    // MX_IWDG_Init();
-    // MX_WWDG_Init();
+#ifdef USE_WATCHDOG
+    MX_TIM5_Init();
+    MX_IWDG_Init();
+    MX_WWDG_Init();
 #endif
 
     HAL_Delay(1000U);

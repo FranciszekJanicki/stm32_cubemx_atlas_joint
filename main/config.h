@@ -5,13 +5,15 @@
 #include "drv8825_config.h"
 #include "gpio.h"
 #include "i2c.h"
-#include "iwdg.h"
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
+#ifdef USE_WATCHDOG
+#include "iwdg.h"
 #include "wwdg.h"
+#endif
 #include <stdbool.h>
 
 extern TIM_HandleTypeDef htim4;
@@ -228,9 +230,11 @@ extern TIM_HandleTypeDef htim4;
 
 #define SYSTICK_TIMER (&htim4)
 
+#ifdef USE_WATCHDOG
 #define WATCHDOG_REFRESH_TIMER (&htim5)
 #define WINDOW_WATCHDOG (&hwwdg)
 #define INDEPENDENT_WATCHDOG (&hiwdg)
+#endif
 
 #define JOINT_SPI_BUS (&hspi1)
 

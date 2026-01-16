@@ -22,6 +22,7 @@ static inline void joint_delta_debounce_timer_callback(void)
     }
 }
 
+#ifdef USE_WATCHDOG
 static inline void watchdog_refresh_timer_callback(void)
 {
 #ifdef USE_WATCHDOG_TASK
@@ -36,6 +37,7 @@ static inline void watchdog_refresh_timer_callback(void)
     HAL_IWDG_Refresh(INDEPENDENT_WATCHDOG);
 #endif
 }
+#endif
 
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
@@ -44,10 +46,12 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
         HAL_IncTick();
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
-
-    } else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {
+    }
+#ifdef USE_WATCHDOG
+    else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {
         watchdog_refresh_timer_callback();
     }
+#endif
 }
 
 __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(

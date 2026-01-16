@@ -1,4 +1,5 @@
 #include "atlas_joint.h"
+#include "cmsis_os.h"
 #include "joint_task.h"
 #include "log_task.h"
 #include "packet_task.h"
@@ -13,6 +14,8 @@ bool volatile is_kernel_started = false;
 
 void atlas_joint_initialize(atlas_joint_config_t const* config)
 {
+    osKernelInitialize();
+
     ATLAS_ASSERT(config);
 #ifdef USE_WATCHDOG_TASK
     ATLAS_ERR_CHECK(watchdog_task_initialize(&config->watchdog_ctx));
@@ -26,5 +29,5 @@ void atlas_joint_initialize(atlas_joint_config_t const* config)
 
     is_kernel_started = true;
 
-    vTaskStartScheduler();
+    osKernelStart();
 }

@@ -62,7 +62,7 @@ static SemaphoreHandle_t system_task_create_log_mutex(void)
 }
 #endif
 
-#ifndef USE_WATCHDOG_TASK
+#if !defined(USE_WATCHDOG_TASK) && defined(USE_WATCHDOG)
 atlas_err_t system_task_start_refresh_timer(system_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
@@ -86,7 +86,7 @@ atlas_err_t system_task_initialize(system_task_ctx_t* task_ctx)
 {
     ATLAS_ASSERT(task_ctx);
 
-#ifndef USE_WATCHDOG_TASK
+#if !defined(USE_WATCHDOG_TASK) && defined(USE_WATCHDOG)
     ATLAS_RET_ON_ERR(system_task_start_refresh_timer(task_ctx));
 #endif
 
