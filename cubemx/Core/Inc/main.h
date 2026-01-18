@@ -64,8 +64,6 @@ void Error_Handler(void);
 #define JOINT_DELTA_EXTI_IRQn EXTI2_IRQn
 #define JOINT_DRDY_Pin GPIO_PIN_3
 #define JOINT_DRDY_GPIO_Port GPIOA
-#define SPI1_NSS_Pin GPIO_PIN_4
-#define SPI1_NSS_GPIO_Port GPIOA
 #define SPI1_SCLK_Pin GPIO_PIN_5
 #define SPI1_SCLK_GPIO_Port GPIOA
 #define SPI1_MISO_Pin GPIO_PIN_6

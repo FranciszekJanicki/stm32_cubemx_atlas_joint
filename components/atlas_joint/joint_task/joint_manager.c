@@ -201,7 +201,7 @@ static inline as5600_err_t as5600_bus_initialize(void* user)
     return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
                                  config->as5600_i2c_address << 1U,
                                  10U,
-                                 HAL_MAX_DELAY) == HAL_OK
+                                 1000U) == HAL_OK
                ? AS5600_ERR_OK
                : AS5600_ERR_FAIL;
 }

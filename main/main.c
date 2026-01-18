@@ -55,7 +55,7 @@ int main(void)
 
     MX_GPIO_Init();
     MX_CRC_Init();
-    MX_USB_DEVICE_Init();
+  //  MX_USB_DEVICE_Init();
     MX_I2C1_Init();
     MX_RTC_Init();
     MX_SPI1_Init();
@@ -66,8 +66,6 @@ int main(void)
     MX_IWDG_Init();
     MX_WWDG_Init();
 #endif
-
-    HAL_Delay(1000U);
 
     atlas_joint_initialize(&config);
 }

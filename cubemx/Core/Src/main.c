@@ -21,12 +21,10 @@
 #include "cmsis_os.h"
 #include "crc.h"
 #include "i2c.h"
-#include "iwdg.h"
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usb_device.h"
-#include "wwdg.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/

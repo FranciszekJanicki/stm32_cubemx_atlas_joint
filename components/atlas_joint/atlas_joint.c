@@ -14,9 +14,10 @@ bool volatile is_kernel_started = false;
 
 void atlas_joint_initialize(atlas_joint_config_t const* config)
 {
+    ATLAS_ASSERT(config);
+
     osKernelInitialize();
 
-    ATLAS_ASSERT(config);
 #ifdef USE_WATCHDOG_TASK
     ATLAS_ERR_CHECK(watchdog_task_initialize(&config->watchdog_ctx));
 #endif

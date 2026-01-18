@@ -1,13 +1,11 @@
 #include "system_manager.h"
 #include "FreeRTOS.h"
 #include "common.h"
-#include "iwdg.h"
 #include "queue.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_rtc.h"
 #include "task.h"
-#include "wwdg.h"
 #include <stdint.h>
 #include <string.h>
 
