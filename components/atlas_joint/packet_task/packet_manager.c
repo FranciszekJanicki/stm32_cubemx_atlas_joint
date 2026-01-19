@@ -293,7 +293,7 @@ static atlas_err_t packet_manager_joint_packet_handler(
     ATLAS_LOG_FUNC(TAG);
 
     if (packet->destination != manager->config.joint_num) {
-        ATLAS_ERR_FAIL;
+        return ATLAS_ERR_FAIL;
     }
 
     switch (packet->type) {

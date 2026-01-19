@@ -128,7 +128,6 @@ void SystemClock_Config(void)
   * @param  htim : TIM handle
   * @retval None
   */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None

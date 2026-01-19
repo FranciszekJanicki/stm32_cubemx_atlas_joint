@@ -69,14 +69,19 @@ static inline drv8825_err_t drv8825_gpio_write_pin(void* user,
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    static GPIO_TypeDef* pin_to_gpio[5U];
-    pin_to_gpio[config->drv8825_dir_pin] = config->drv8825_dir_gpio;
-    pin_to_gpio[config->drv8825_en_pin] = config->drv8825_en_gpio;
-    pin_to_gpio[config->drv8825_m2_pin] = config->drv8825_m2_gpio;
-    pin_to_gpio[config->drv8825_m1_pin] = config->drv8825_m1_gpio;
-    pin_to_gpio[config->drv8825_m0_pin] = config->drv8825_m0_gpio;
+    GPIO_TypeDef* port = nullptr;
+    if (pin == config->drv8825_dir_pin)
+        port = config->drv8825_dir_gpio;
+    else if (pin == config->drv8825_en_pin)
+        port = config->drv8825_en_gpio;
+    else if (pin == config->drv8825_m2_pin)
+        port = config->drv8825_m2_gpio;
+    else if (pin == config->drv8825_m1_pin)
+        port = config->drv8825_m1_gpio;
+    else if (pin == config->drv8825_m0_pin)
+        port = config->drv8825_m0_gpio;
 
-    HAL_GPIO_WritePin(pin_to_gpio[pin], pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(port, (uint16_t)pin, (GPIO_PinState)state);
 
     return DRV8825_ERR_OK;
 }
@@ -174,12 +179,11 @@ static inline as5600_err_t as5600_gpio_write_pin(void* user,
     joint_config_t* config = (joint_config_t*)user;
 
     GPIO_TypeDef* gpio = NULL;
-
     if (pin == config->as5600_dir_pin) {
         gpio = config->as5600_dir_gpio;
     }
 
-    HAL_GPIO_WritePin(gpio, pin, (GPIO_PinState)state);
+    HAL_GPIO_WritePin(gpio, (uint16_t)pin, (GPIO_PinState)state);
 
     return AS5600_ERR_OK;
 }
@@ -203,7 +207,7 @@ static inline as5600_err_t as5600_bus_initialize(void* user)
                                  10U,
                                  1000U) == HAL_OK
                ? AS5600_ERR_OK
-               : AS5600_ERR_FAIL;
+               : AS5600_ERR_FAIL; 
 }
 
 static inline as5600_err_t as5600_bus_deinitialize(void* user)
