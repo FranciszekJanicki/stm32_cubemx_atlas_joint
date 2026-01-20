@@ -6,7 +6,7 @@
 #include "task.h"
 #include <stdint.h>
 
-#define PACKET_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
+#define PACKET_TASK_STACK_DEPTH (5000U / sizeof(StackType_t))
 #define PACKET_TASK_PRIORITY (1U)
 #define PACKET_TASK_NAME ("atlas_joint:packet_task")
 

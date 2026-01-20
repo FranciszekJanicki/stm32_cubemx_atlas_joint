@@ -2532,15 +2532,15 @@ __weak void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
   *               the configuration information for SPI module.
   * @retval None
   */
-__weak void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hspi);
+// __weak void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+// {
+//   /* Prevent unused argument(s) compilation warning */
+//   UNUSED(hspi);
 
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_SPI_TxRxCpltCallback should be implemented in the user file
-   */
-}
+//   /* NOTE : This function should not be modified, when the callback is needed,
+//             the HAL_SPI_TxRxCpltCallback should be implemented in the user file
+//    */
+// }
 
 /**
   * @brief  Tx Half Transfer completed callback.

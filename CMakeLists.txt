@@ -12,8 +12,8 @@ message(STATUS "Project name: ${CMAKE_PROJECT_NAME}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Toolchain file: ${CMAKE_TOOLCHAIN_FILE}") 
 
-add_subdirectory(${CUBEMX_DIR})
 add_subdirectory(${MAIN_DIR})
+add_subdirectory(${CUBEMX_DIR})
 
 add_subdirectories(${SUBMODULES_DIR})
 add_subdirectories(${COMPONENTS_DIR})

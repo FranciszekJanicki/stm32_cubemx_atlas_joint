@@ -5,9 +5,7 @@
 #include "task.h"
 #include <string.h>
 
-__attribute__((used)) void vApplicationStackOverflowHook(
-    TaskHandle_t xTask,
-    signed char* pcTaskName)
+void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char* pcTaskName)
 {
     atlas_log("Stack overflow on %s stack \n\r", pcTaskName);
 

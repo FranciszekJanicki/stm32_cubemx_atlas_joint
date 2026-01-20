@@ -6,7 +6,7 @@
 #include "task.h"
 #include <stdint.h>
 
-#define JOINT_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
+#define JOINT_TASK_STACK_DEPTH (5000U / sizeof(StackType_t))
 #define JOINT_TASK_PRIORITY (1U)
 #define JOINT_TASK_NAME ("atlas_joint:joint_task")
 

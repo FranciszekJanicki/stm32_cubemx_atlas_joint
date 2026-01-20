@@ -8,6 +8,17 @@
 #include "stm32f4xx_hal.h"
 #include "system_task.h"
 
+static inline void joint_slave_select_exti_callback(void)
+{}
+
+static inline void joint_delta_exti_callback(void)
+{
+    if (HAL_GPIO_ReadPin(JOINT_DELTA_GPIO, JOINT_DELTA_PIN) == GPIO_PIN_SET) {
+        HAL_TIM_Base_Stop_IT(JOINT_DELTA_DEBOUNCE_TIMER);
+        HAL_TIM_Base_Start_IT(JOINT_DELTA_DEBOUNCE_TIMER);
+    }
+}
+
 static inline void joint_delta_debounce_timer_callback(void)
 {
     static uint8_t debounce_counter = 0U;
@@ -42,8 +53,8 @@ static inline void watchdog_refresh_timer_callback(void)
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
 {
-    if (htim->Instance == TIM4) {
-        HAL_IncTick();
+    if (htim->Instance == TIM5) {
+        uwTick += uwTickFreq;
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
     }
@@ -59,17 +70,6 @@ __attribute__((used)) void HAL_TIM_PWM_PulseFinishedCallback(
 {
     if (htim->Instance == DRV8825_STEP_TIMER->Instance) {
         joint_task_pwm_pulse_callback();
-    }
-}
-
-static inline void joint_slave_select_exti_callback(void)
-{}
-
-static inline void joint_delta_exti_callback(void)
-{
-    if (HAL_GPIO_ReadPin(JOINT_DELTA_GPIO, JOINT_DELTA_PIN) == GPIO_PIN_SET) {
-        HAL_TIM_Base_Stop_IT(JOINT_DELTA_DEBOUNCE_TIMER);
-        HAL_TIM_Base_Start_IT(JOINT_DELTA_DEBOUNCE_TIMER);
     }
 }
 

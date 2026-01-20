@@ -6,7 +6,7 @@
 #include "task.h"
 #include <stdint.h>
 
-#define SYSTEM_TASK_STACK_DEPTH (10000U / sizeof(StackType_t))
+#define SYSTEM_TASK_STACK_DEPTH (5000U / sizeof(StackType_t))
 #define SYSTEM_TASK_PRIORITY (1U)
 #define SYSTEM_TASK_NAME ("atlas_joint:system_task")
 
