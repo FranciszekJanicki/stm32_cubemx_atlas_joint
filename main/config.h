@@ -238,14 +238,14 @@ extern TIM_HandleTypeDef htim4;
 
 #define JOINT_SPI_BUS (&hspi1)
 
-#define JOINT_NSS_GPIO (GPIOB)
-#define JOINT_NSS_PIN (1U << 14U)
+#define JOINT_NSS_GPIO (GPIOA)
+#define JOINT_NSS_PIN (1U << 4U)
 
-#define JOINT_DELTA_GPIO (GPIOB)
-#define JOINT_DELTA_PIN (1U << 13U)
+#define JOINT_DELTA_GPIO (GPIOA)
+#define JOINT_DELTA_PIN (1U << 2U)
 
-#define JOINT_DRDY_GPIO (GPIOB)
-#define JOINT_DRDY_PIN (1U << 12U)
+#define JOINT_DRDY_GPIO (GPIOA)
+#define JOINT_DRDY_PIN (1U << 3U)
 
 #define JOINT_DELTA_DEBOUNCE_TIMER (&htim1)
 
