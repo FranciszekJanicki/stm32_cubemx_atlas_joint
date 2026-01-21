@@ -20,7 +20,7 @@ if(USE_WATCHDOG AND USE_WATCHDOG_TASK)
 
     target_link_libraries(watchdog_task PUBLIC
         common
-        cubemx
+        stm32cubemx
     )
 
     target_compile_options(watchdog_task PUBLIC

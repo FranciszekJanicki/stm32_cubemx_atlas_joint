@@ -122,7 +122,7 @@ void SystemClock_Config(void)
 
 /**
   * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM5 interrupt took place, inside
+  * @note   This function is called  when TIM4 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
   * a global variable "uwTick" used as application time base.
   * @param  htim : TIM handle
@@ -143,7 +143,8 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-#ifdef USE_FULL_ASSERT
+
+#ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

@@ -54,7 +54,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DRV8825_EN_GPIO_Port, DRV8825_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, JOINT_DRDY_Pin|DRV8825_DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, JOINT_DRDY_Pin|DRV885_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, DRV8825_M2_Pin|DRV8825_M1_Pin|DRV8825_M0_Pin|AS5600_DIR_Pin, GPIO_PIN_RESET);
@@ -72,8 +72,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(JOINT_DELTA_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : JOINT_DRDY_Pin DRV8825_DIR_Pin */
-  GPIO_InitStruct.Pin = JOINT_DRDY_Pin|DRV8825_DIR_Pin;
+  /*Configure GPIO pins : JOINT_DRDY_Pin DRV885_DIR_Pin */
+  GPIO_InitStruct.Pin = JOINT_DRDY_Pin|DRV885_DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

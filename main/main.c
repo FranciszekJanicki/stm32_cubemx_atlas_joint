@@ -48,49 +48,14 @@ static atlas_joint_config_t config = {
 
 void SystemClock_Config(void);
 
-static void reset_flags(void)
-{
-    uint32_t reset_flags = RCC->CSR;
-
-    if (reset_flags & RCC_CSR_LPWRRSTF) {
-        // Low-power reset
-        printf("Low-power reset\n");
-    }
-    if (reset_flags & RCC_CSR_WWDGRSTF) {
-        // Window watchdog reset
-        printf("Window watchdog reset\n");
-    }
-    if (reset_flags & RCC_CSR_IWDGRSTF) {
-        // Independent watchdog reset
-        printf("Independent watchdog reset\n");
-    }
-    if (reset_flags & RCC_CSR_SFTRSTF) {
-        // Software reset
-        printf("Software reset\n");
-    }
-    if (reset_flags & RCC_CSR_PORRSTF) {
-        // Power-on reset
-        printf("Power-on reset\n");
-    }
-    if (reset_flags & RCC_CSR_PINRSTF) {
-        // External reset pin
-        printf("NRST pin reset\n");
-    }
-
-    // Clear all reset flags
-    RCC->CSR |= RCC_CSR_RMVF;
-}
-
 int main(void)
 {
-    reset_flags();
-
     HAL_Init();
     SystemClock_Config();
 
     MX_GPIO_Init();
     MX_CRC_Init();
-    //  MX_USB_DEVICE_Init();
+    MX_USB_DEVICE_Init();
     MX_I2C1_Init();
     MX_RTC_Init();
     MX_SPI1_Init();

@@ -11,7 +11,7 @@ target_include_directories(system_task PUBLIC
 
 target_link_libraries(system_task PUBLIC
     common
-    cubemx
+    stm32cubemx
 )
 
 target_compile_options(system_task PUBLIC

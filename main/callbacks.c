@@ -53,7 +53,7 @@ static inline void watchdog_refresh_timer_callback(void)
 __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
 {
-    if (htim->Instance == TIM5) {
+    if (htim->Instance == TIM4) {
         uwTick += uwTickFreq;
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();

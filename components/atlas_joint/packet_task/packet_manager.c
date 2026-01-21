@@ -559,9 +559,9 @@ atlas_err_t packet_manager_initialize(packet_manager_t* manager,
     memset(manager->receive_buffer, 0, sizeof(manager->receive_buffer));
     memset(manager->transmit_buffer, 0, sizeof(manager->transmit_buffer));
 
-    // if (packet_manager_packet_spi_transfer(manager)) {
-    //     return ATLAS_ERR_FAIL;
-    // }
+    if (packet_manager_packet_spi_transfer(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
     packet_manager_deassert_data_ready(manager);
 
     if (!packet_manager_update_startup_timestamp(manager) ||

@@ -14,7 +14,7 @@ target_link_libraries(joint_task PUBLIC
     drv8825
     step_motor
     pid_regulator
-    cubemx
+    stm32cubemx
     as5600
     ina226
     common

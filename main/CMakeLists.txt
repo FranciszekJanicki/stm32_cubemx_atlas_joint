@@ -9,7 +9,7 @@ target_sources(main PRIVATE
 )
 
 target_link_libraries(main PRIVATE
-    cubemx
+    stm32cubemx
     atlas_joint
 )
 

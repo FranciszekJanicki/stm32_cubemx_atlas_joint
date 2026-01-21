@@ -21,7 +21,7 @@ target_link_libraries(atlas_joint PUBLIC
     joint_task
     log_task
     packet_task
-    cubemx
+    stm32cubemx
 )
 
 if(USE_WATCHDOG_TASK)
