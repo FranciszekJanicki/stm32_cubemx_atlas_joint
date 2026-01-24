@@ -29,7 +29,11 @@ static atlas_joint_config_t config = {
                              .as5600_i2c_bus = AS5600_I2C_BUS,
                              .as5600_i2c_address = AS5600_I2C_ADDRESS,
                              .as5600_dir_gpio = AS5600_DIR_GPIO,
-                             .as5600_dir_pin = AS5600_DIR_PIN},
+                             .as5600_dir_pin = AS5600_DIR_PIN,
+#ifdef JOINT_TEST
+                             .joint_test_delta_timer = JOINT_TEST_DELTA_TIMER
+#endif
+                  },
                   .parameters = {.prop_gain = DEFAULT_PROP_GAIN,
                                  .int_gain = DEFAULT_INT_GAIN,
                                  .dot_gain = DEFAULT_DOT_GAIN,
@@ -61,6 +65,9 @@ int main(void)
     MX_SPI1_Init();
     MX_TIM1_Init();
     MX_TIM2_Init();
+#ifdef JOINT_TEST
+    MX_TIM3_Init();
+#endif
 #ifdef USE_WATCHDOG
     MX_TIM5_Init();
     MX_IWDG_Init();

@@ -45,6 +45,10 @@ typedef struct {
 
     I2C_HandleTypeDef* as5600_i2c_bus;
     uint16_t as5600_i2c_address;
+
+#ifdef JOINT_TEST
+    TIM_HandleTypeDef* joint_test_delta_timer;
+#endif
 } joint_config_t;
 
 typedef atlas_joint_parameters_t joint_parameters_t;

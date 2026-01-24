@@ -169,6 +169,25 @@ static atlas_err_t system_manager_event_joint_started_handler(
     ATLAS_ASSERT(manager && joint_started);
     ATLAS_LOG_FUNC(TAG);
 
+    atlas_joint_command_t command = {.type = ATLAS_JOINT_COMMAND_TYPE_SET_STATE,
+                                     .payload.set_state.state =
+                                         ATLAS_JOINT_STATE_RUNNING};
+    joint_event_t event = {.type = JOINT_EVENT_TYPE_JOINT_COMMAND,
+                           .payload.joint_command.command = command};
+
+    command = (atlas_joint_command_t){
+        .type = ATLAS_JOINT_COMMAND_TYPE_SET_REFERENCE,
+        .payload.set_reference = (atlas_joint_command_payload_set_reference_t){
+            .reference =
+                (atlas_joint_reference_t){.position = 0.0F,
+                                          .delta_time = 5.0F / 1000.0F}}};
+#ifdef JOINT_TEST
+
+    system_manager_send_joint_event(&event);
+
+    system_manager_send_joint_event(&event);
+#endif
+
     manager->is_joint_running = true;
 
     return ATLAS_ERR_OK;

@@ -276,4 +276,6 @@ extern TIM_HandleTypeDef htim4;
 #define DRV8825_EN_GPIO (GPIOC)
 #define DRV8825_EN_PIN (1U << 13U)
 
+#define JOINT_TEST_DELTA_TIMER (&htim3)
+
 #endif // MAIN_CONFIG_H

@@ -207,7 +207,7 @@ static inline as5600_err_t as5600_bus_initialize(void* user)
                                  10U,
                                  1000U) == HAL_OK
                ? AS5600_ERR_OK
-               : AS5600_ERR_FAIL; 
+               : AS5600_ERR_FAIL;
 }
 
 static inline as5600_err_t as5600_bus_deinitialize(void* user)
@@ -597,6 +597,26 @@ static inline bool joint_manager_deinitialize_chips(joint_manager_t* manager)
     ATLAS_ASSERT(manager);
 }
 
+#ifdef JOINT_TEST
+static inline bool joint_manager_start_joint_test_delta_timer(
+    joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return HAL_TIM_Base_Start_IT(manager->config.joint_test_delta_timer) ==
+           HAL_OK;
+}
+
+static inline bool joint_manager_stop_joint_test_delta_timer(
+    joint_manager_t* manager)
+{
+    ATLAS_ASSERT(manager);
+
+    return HAL_TIM_Base_Stop_IT(manager->config.joint_test_delta_timer) ==
+           HAL_OK;
+}
+#endif
+
 static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
 {
     ATLAS_ASSERT(manager);
@@ -783,6 +803,18 @@ static inline bool joint_manager_deinitialize_drivers(joint_manager_t* manager)
     return true;
 }
 
+#ifdef JOINT_TEST
+static atlas_joint_reference_t trajectory[] = {
+    {.delta_time = 0.05F, .position = 0.0F},
+    {.delta_time = 0.05F, .position = 50.0F},
+    {.delta_time = 0.05F, .position = 100.0F},
+    {.delta_time = 0.05F, .position = 50.0F},
+    {.delta_time = 0.05F, .position = 0.0F}};
+
+static uint32_t const traj_len = sizeof(trajectory) / sizeof(*trajectory);
+static uint32_t i = 0U;
+#endif
+
 static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     joint_manager_t* manager)
 {
@@ -826,6 +858,20 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
     manager->measure.position = state.measure_position;
     manager->measure.current = state.fault_current;
+
+#ifdef JOINT_TEST
+    if (fabsf(manager->reference.position - manager->measure.position) <
+        0.05F) {
+        if (i < traj_len) {
+            manager->reference = trajectory[i++];
+        }
+
+        if (i >= traj_len) {
+            joint_manager_stop_joint_test_delta_timer(manager);
+            manager->state = ATLAS_JOINT_STATE_READY;
+        }
+    }
+#endif
 
     return ATLAS_ERR_OK;
 }
@@ -881,10 +927,12 @@ static atlas_err_t joint_manager_event_start_handler(
     manager->is_running = true;
     manager->state = ATLAS_JOINT_STATE_READY;
 
-#ifdef DELTA_TEST
-    manager->reference.delta_time = 0.01F;
-    manager->reference.position = 100.0F;
-    xTimerStart(timer_manager_get(TIMER_TYPE_DELTA_TEST), pdMS_TO_TICKS(1));
+#ifdef JOINT_TEST
+
+    manager->state = ATLAS_JOINT_STATE_RUNNING;
+    manager->reference = trajectory[0U];
+
+    joint_manager_start_joint_test_delta_timer(manager);
 #endif
 
     return ATLAS_ERR_OK;

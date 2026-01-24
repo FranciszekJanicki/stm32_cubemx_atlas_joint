@@ -54,10 +54,15 @@ __attribute__((used)) void HAL_TIM_PeriodElapsedCallback(
     TIM_HandleTypeDef* htim)
 {
     if (htim->Instance == TIM4) {
-        uwTick += uwTickFreq;
+        HAL_IncTick();
     } else if (htim->Instance == JOINT_DELTA_DEBOUNCE_TIMER->Instance) {
         joint_delta_debounce_timer_callback();
     }
+#ifdef JOINT_TEST
+    else if (htim->Instance == JOINT_TEST_DELTA_TIMER->Instance) {
+        joint_task_delta_elapsed_callback();
+    }
+#endif
 #ifdef USE_WATCHDOG
     else if (htim->Instance == WATCHDOG_REFRESH_TIMER->Instance) {
         watchdog_refresh_timer_callback();

@@ -62,3 +62,11 @@ if (ROBOT_PACKET_TEST)
         ROBOT_PACKET_TEST
     )
 endif()
+
+option(JOINT_TEST "Perform joint move test" ON)
+
+if (JOINT_TEST)
+    target_compile_definitions(common PUBLIC
+        JOINT_TEST
+    )
+endif()
