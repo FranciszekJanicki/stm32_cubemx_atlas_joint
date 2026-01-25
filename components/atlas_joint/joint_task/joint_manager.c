@@ -815,15 +815,60 @@ static inline bool joint_manager_deinitialize_drivers(joint_manager_t* manager)
 }
 
 #ifdef JOINT_TEST
-static atlas_joint_reference_t trajectory[] = {
-    {.delta_time = 0.05F, .position = 0.0F},
-    {.delta_time = 0.05F, .position = 50.0F},
-    {.delta_time = 0.05F, .position = 100.0F},
-    {.delta_time = 0.05F, .position = 50.0F},
-    {.delta_time = 0.05F, .position = 0.0F}};
 
-static uint32_t const traj_len = sizeof(trajectory) / sizeof(*trajectory);
-static uint32_t i = 0U;
+typedef struct {
+    float q_start;
+    float q_end;
+    float t;
+    float T;
+    float dt;
+    bool active;
+} joint_ptp_t;
+
+#define V_MAX 1.0f
+#define A_MAX 0.5f
+#define FACTOR_V 1.875f
+#define FACTOR_A 5.773502f
+
+static float quintic_ease(float tau)
+{
+    if (tau <= 0.0f)
+        return 0.0f;
+    if (tau >= 1.0f)
+        return 1.0f;
+
+    return tau * tau * tau * (10.0f + tau * (-15.0f + tau * 6.0f));
+}
+
+static float calculate_move_duration(float q0, float q1)
+{
+    float dist = fabsf(q1 - q0);
+    if (dist < 1e-4f)
+        return 0.01f;
+
+    float t_vel = (FACTOR_V * dist) / V_MAX;
+    float t_acc = sqrtf((FACTOR_A * dist) / A_MAX);
+
+    float T = (t_vel > t_acc) ? t_vel : t_acc;
+    if (T < 0.01f)
+        T = 0.01f;
+
+    return T;
+}
+
+static bool ptp_step(joint_ptp_t* p, float* q_out)
+{
+    float tau = p->t / p->T;
+    float s = quintic_ease(tau);
+
+    *q_out = p->q_start + (p->q_end - p->q_start) * s;
+    p->t += p->dt;
+
+    return (p->t >= p->T);
+}
+
+static joint_ptp_t ptp;
+
 #endif
 
 static atlas_err_t joint_manager_notify_delta_elapsed_handler(
@@ -840,6 +885,21 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
         manager->state == ATLAS_JOINT_STATE_FAULT) {
         return ATLAS_ERR_FAIL;
     }
+
+#ifdef JOINT_TEST
+    if (ptp.active && manager->state == ATLAS_JOINT_STATE_RUNNING) {
+        float q_ref;
+        bool done = ptp_step(&ptp, &q_ref);
+
+        manager->reference.position = q_ref;
+        manager->reference.delta_time = ptp.dt;
+
+        if (done) {
+            ptp.active = false;
+            manager->state = ATLAS_JOINT_STATE_READY;
+        }
+    }
+#endif
 
     motor_driver_err_t err =
         motor_driver_set_position(&manager->driver,
@@ -869,20 +929,6 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
     manager->measure.position = state.measure_position;
     manager->measure.current = state.fault_current;
-
-#ifdef JOINT_TEST
-    if (fabsf(manager->reference.position - manager->measure.position) <
-        0.05F) {
-        if (i < traj_len) {
-            manager->reference = trajectory[i++];
-        }
-
-        if (i >= traj_len) {
-            joint_manager_stop_joint_test_delta_timer(manager);
-            manager->state = ATLAS_JOINT_STATE_READY;
-        }
-    }
-#endif
 
     return ATLAS_ERR_OK;
 }
@@ -939,9 +985,13 @@ static atlas_err_t joint_manager_event_start_handler(
     manager->state = ATLAS_JOINT_STATE_READY;
 
 #ifdef JOINT_TEST
-
     manager->state = ATLAS_JOINT_STATE_RUNNING;
-    manager->reference = trajectory[0U];
+    ptp.q_start = manager->measure.position;
+    ptp.q_end = manager->reference.position;
+    ptp.t = 0.0f;
+    ptp.dt = manager->reference.delta_time;
+    ptp.T = calculate_move_duration(ptp.q_start, ptp.q_end);
+    ptp.active = true;
 
     joint_manager_start_joint_test_delta_timer(manager);
 #endif
