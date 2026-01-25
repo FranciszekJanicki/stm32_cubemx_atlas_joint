@@ -48,6 +48,8 @@ typedef struct {
 
 #ifdef JOINT_TEST
     TIM_HandleTypeDef* joint_test_delta_timer;
+    GPIO_TypeDef* joint_test_home_confirm_gpio;
+    uint16_t joint_test_home_confirm_pin;
 #endif
 } joint_config_t;
 

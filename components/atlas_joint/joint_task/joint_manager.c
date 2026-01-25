@@ -805,7 +805,7 @@ static inline bool joint_manager_deinitialize_drivers(joint_manager_t* manager)
 }
 
 #ifdef JOINT_TEST
-
+/* ===================== PTP ===================== */
 typedef struct {
     float q_start;
     float q_end;
@@ -841,7 +841,6 @@ static float calculate_move_duration(float q0, float q1)
     float T = (t_vel > t_acc) ? t_vel : t_acc;
     if (T < 0.01f)
         T = 0.01f;
-
     return T;
 }
 
@@ -868,7 +867,60 @@ static bool ptp_step(joint_ptp_t* p, float dt, float* q_out)
 
 static joint_ptp_t ptp;
 
-#endif
+/* ===================== HOMING ===================== */
+typedef struct {
+    float speed;
+    float home_position;
+    bool active;
+} joint_homing_t;
+
+static joint_homing_t homing;
+
+static bool homing_step(joint_manager_t* manager, float dt)
+{
+    static float last_position = 0.0f;
+    static float still_time = 0.0f;
+
+    float pos;
+    as5600_get_angle_data_scaled_bus(&manager->as5600, &pos);
+
+    if (fabsf(pos - last_position) < 0.0005f) {
+        still_time += dt;
+    } else {
+        still_time = 0.0f;
+    }
+
+    last_position = pos;
+
+    /* 200 ms bez ruchu = dojechaliśmy do krańca */
+    if (still_time > 0.2f) {
+        step_motor_set_speed(&manager->motor, 0.0f);
+        manager->measure.position = homing.home_position;
+        homing.active = false;
+        return true;
+    }
+
+    step_motor_set_speed(&manager->motor, homing.speed);
+    return false;
+}
+
+/* ===================== PA9 EDGE ===================== */
+static bool wait_for_falling_edge = false;
+
+static bool detect_falling_edge_pa9(joint_manager_t* manager)
+{
+    static GPIO_PinState last = GPIO_PIN_SET;
+
+    GPIO_PinState now =
+        HAL_GPIO_ReadPin(manager->config.joint_test_home_confirm_gpio,
+                         manager->config.joint_test_home_confirm_pin);
+
+    bool falling = (last == GPIO_PIN_SET && now == GPIO_PIN_RESET);
+    last = now;
+    return falling;
+}
+
+#endif /* JOINT_TEST */
 
 static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     joint_manager_t* manager)
@@ -887,7 +939,32 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
 #ifdef JOINT_TEST
 
-    static float32_t prev_position = 0.0F;
+    /* ---- HOMING ---- */
+    if (manager->state == ATLAS_JOINT_STATE_HOMING && homing.active) {
+        if (homing_step(manager, manager->reference.delta_time)) {
+            manager->state = ATLAS_JOINT_STATE_READY;
+            wait_for_falling_edge = true;
+        }
+        return ATLAS_ERR_OK;
+    }
+
+    /* ---- WAIT FOR PA9 ---- */
+    if (wait_for_falling_edge) {
+        if (detect_falling_edge_pa9(manager)) {
+            ptp.q_start = manager->measure.position;
+            ptp.q_end = manager->reference.position;
+            ptp.t = 0.0f;
+            ptp.T = calculate_move_duration(ptp.q_start, ptp.q_end);
+            ptp.active = true;
+
+            manager->state = ATLAS_JOINT_STATE_RUNNING;
+            wait_for_falling_edge = false;
+        }
+        return ATLAS_ERR_OK;
+    }
+
+    /* ---- PTP ---- */
+    static float prev_position = 0.0f;
 
     if (ptp.active) {
         float q_ref;
@@ -895,16 +972,16 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
         manager->reference.position = q_ref;
 
+        float speed = (manager->reference.position - prev_position) /
+                      manager->reference.delta_time;
+
+        step_motor_set_speed(&manager->motor, speed);
+        prev_position = manager->reference.position;
+
         if (done) {
             step_motor_set_speed(&manager->motor, 0.0f);
+            joint_manager_stop_joint_test_delta_timer(manager);
         }
-
-        float32_t control_speed =
-            (manager->reference.position - prev_position) / 0.05F;
-
-        step_motor_set_speed(&manager->motor, control_speed);
-
-        prev_position = manager->reference.position;
     }
 #else
 
@@ -992,16 +1069,18 @@ static atlas_err_t joint_manager_event_start_handler(
     manager->state = ATLAS_JOINT_STATE_READY;
 
 #ifdef JOINT_TEST
-    manager->state = ATLAS_JOINT_STATE_RUNNING;
-    ptp.q_start = manager->measure.position;
-    ptp.q_end = manager->reference.position;
-    ptp.t = 0.0f;
-    ptp.T = calculate_move_duration(ptp.q_start, ptp.q_end);
-    ptp.active = true;
+    manager->state = ATLAS_JOINT_STATE_HOMING;
+    manager->reference.delta_time = 0.05F;
 
-    if (!joint_manager_start_joint_test_delta_timer(manager)) {
+    homing.speed = -0.3f;
+    homing.home_position = 0.0f;
+    homing.active = true;
+
+    ptp.active = false;
+    wait_for_falling_edge = false;
+
+    if (!joint_manager_start_joint_test_delta_timer(manager))
         return ATLAS_ERR_FAIL;
-    }
 #endif
 
     return ATLAS_ERR_OK;

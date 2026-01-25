@@ -278,4 +278,7 @@ extern TIM_HandleTypeDef htim4;
 
 #define JOINT_TEST_DELTA_TIMER (&htim3)
 
+#define JOINT_TEST_HOME_CONFIRM_GPIO (GPIOA)
+#define JOINT_TEST_HOME_CONFIRM_PIN (1U << 9U)
+
 #endif // MAIN_CONFIG_H
