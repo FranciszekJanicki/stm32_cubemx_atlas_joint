@@ -46,31 +46,33 @@ int _read(int file, char* ptr, int len)
 
 int _write(int file, char* ptr, int len)
 {
-    if (file == 1) {
-        if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-#ifdef USE_LOG_TASK
-            StreamBufferHandle_t log_stream_buffer =
-                stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
-            return xStreamBufferSend(log_stream_buffer,
-                                     ptr,
-                                     (size_t)len,
-                                     pdMS_TO_TICKS(1000));
-#else
-            SemaphoreHandle_t log_mutex =
-                semaphore_manager_get(SEMAPHORE_TYPE_LOG);
-            if (xSemaphoreTake(log_mutex, portMAX_DELAY) == pdPASS) {
-                CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
-                xSemaphoreGive(log_mutex);
-            }
-#endif
-        } else {
-            CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
-        }
-
-        return len;
+    if (file != 1 || len <= 0) {
+        return 0;
     }
 
-    return 0;
+    if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+#ifdef USE_LOG_TASK
+        StreamBufferHandle_t log_stream_buffer =
+            stream_buffer_manager_get(STREAM_BUFFER_TYPE_LOG);
+
+        xStreamBufferSend(log_stream_buffer,
+                          ptr,
+                          (size_t)len,
+                          pdMS_TO_TICKS(1000));
+#else
+        SemaphoreHandle_t log_mutex = semaphore_manager_get(SEMAPHORE_TYPE_LOG);
+
+        if (xSemaphoreTake(log_mutex, portMAX_DELAY) == pdPASS) {
+            CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
+            xSemaphoreGive(log_mutex);
+        }
+#endif
+
+    } else {
+        CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
+    }
+
+    return len;
 }
 
 int _close(int file)

@@ -587,7 +587,7 @@ static inline bool joint_manager_initialize_chips(joint_manager_t* manager)
         AS5600_ERR_OK) {
         ATLAS_LOG(TAG, "Failed as5600_initialize_chip");
 
-        return false;
+        //     return false;
     }
 
     // if (ina226_initialize_chip(&manager->ina226,
@@ -651,7 +651,7 @@ static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
         AS5600_ERR_OK) {
         ATLAS_LOG(TAG, "Failed as5600_initialize");
 
-        return false;
+        //   return false;
     }
 
     // if (ina226_initialize(
@@ -821,7 +821,6 @@ typedef struct {
     float q_end;
     float t;
     float T;
-    float dt;
     bool active;
 } joint_ptp_t;
 
@@ -856,15 +855,25 @@ static float calculate_move_duration(float q0, float q1)
     return T;
 }
 
-static bool ptp_step(joint_ptp_t* p, float* q_out)
+static bool ptp_step(joint_ptp_t* p, float dt, float* q_out)
 {
+    if (!p->active) {
+        *q_out = p->q_end;
+        return true;
+    }
+
+    p->t += dt;
+
     float tau = p->t / p->T;
+    if (tau >= 1.0f) {
+        tau = 1.0f;
+        p->active = false;
+    }
+
     float s = quintic_ease(tau);
-
     *q_out = p->q_start + (p->q_end - p->q_start) * s;
-    p->t += p->dt;
 
-    return (p->t >= p->T);
+    return !p->active;
 }
 
 static joint_ptp_t ptp;
@@ -887,17 +896,11 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     }
 
 #ifdef JOINT_TEST
-    if (ptp.active && manager->state == ATLAS_JOINT_STATE_RUNNING) {
+    if (ptp.active) {
         float q_ref;
-        bool done = ptp_step(&ptp, &q_ref);
+        ptp_step(&ptp, manager->reference.delta_time, &q_ref);
 
         manager->reference.position = q_ref;
-        manager->reference.delta_time = ptp.dt;
-
-        if (done) {
-            ptp.active = false;
-            manager->state = ATLAS_JOINT_STATE_READY;
-        }
     }
 #endif
 
@@ -989,11 +992,12 @@ static atlas_err_t joint_manager_event_start_handler(
     ptp.q_start = manager->measure.position;
     ptp.q_end = manager->reference.position;
     ptp.t = 0.0f;
-    ptp.dt = manager->reference.delta_time;
     ptp.T = calculate_move_duration(ptp.q_start, ptp.q_end);
     ptp.active = true;
 
-    joint_manager_start_joint_test_delta_timer(manager);
+    if (!joint_manager_start_joint_test_delta_timer(manager)) {
+        return ATLAS_ERR_FAIL;
+    }
 #endif
 
     return ATLAS_ERR_OK;
