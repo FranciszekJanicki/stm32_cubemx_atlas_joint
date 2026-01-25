@@ -202,6 +202,16 @@ static inline as5600_err_t as5600_bus_initialize(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
+    for (uint8_t i = 0U; i < (1U << 7U); ++i) {
+        if (HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
+                                  i << 1U,
+                                  10U,
+                                  1000U) == HAL_OK) {
+            while (1)
+                ;
+        }
+    }
+
     return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
                                  config->as5600_i2c_address << 1U,
                                  10U,
@@ -650,11 +660,12 @@ static inline bool joint_manager_initialize_drivers(joint_manager_t* manager)
     //         ina226_current_range_to_scale(
     //                                manager->parameters.current_limit)},
     //         &(ina226_interface_t){.bus_user = &manager->config,
-    //                               .bus_initialize = ina226_bus_initialize,
+    //                               .bus_initialize =
+    //                               ina226_bus_initialize,
     //                               .bus_deinitialize =
-    //                               ina226_bus_deinitialize, .bus_read_data =
-    //                               ina226_bus_read_data, .bus_write_data =
-    //                               ina226_bus_write_data}) !=
+    //                               ina226_bus_deinitialize, .bus_read_data
+    //                               = ina226_bus_read_data, .bus_write_data
+    //                               = ina226_bus_write_data}) !=
     //     INA226_ERR_OK) {
     //     ATLAS_LOG(TAG, "Failed ina226_initialize");
 
