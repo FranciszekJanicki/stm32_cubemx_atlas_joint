@@ -202,16 +202,6 @@ static inline as5600_err_t as5600_bus_initialize(void* user)
 {
     joint_config_t* config = (joint_config_t*)user;
 
-    for (uint8_t i = 0U; i < (1U << 7U); ++i) {
-        if (HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
-                                  i << 1U,
-                                  10U,
-                                  1000U) == HAL_OK) {
-            while (1)
-                ;
-        }
-    }
-
     return HAL_I2C_IsDeviceReady(config->as5600_i2c_bus,
                                  config->as5600_i2c_address << 1U,
                                  10U,
@@ -896,13 +886,27 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
     }
 
 #ifdef JOINT_TEST
+
+    static float32_t prev_position = 0.0F;
+
     if (ptp.active) {
         float q_ref;
-        ptp_step(&ptp, manager->reference.delta_time, &q_ref);
+        bool done = ptp_step(&ptp, manager->reference.delta_time, &q_ref);
 
         manager->reference.position = q_ref;
+
+        if (done) {
+            step_motor_set_speed(&manager->motor, 0.0f);
+        }
+
+        float32_t control_speed =
+            (manager->reference.position - prev_position) / 0.05F;
+
+        step_motor_set_speed(&manager->motor, control_speed);
+
+        prev_position = manager->reference.position;
     }
-#endif
+#else
 
     motor_driver_err_t err =
         motor_driver_set_position(&manager->driver,
@@ -932,7 +936,7 @@ static atlas_err_t joint_manager_notify_delta_elapsed_handler(
 
     manager->measure.position = state.measure_position;
     manager->measure.current = state.fault_current;
-
+#endif
     return ATLAS_ERR_OK;
 }
 
